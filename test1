@@ -171,6 +171,65 @@ tbl_MasterPositionBreaks AS
         BaseData.string_13 AS Freq
 
     FROM BaseData
+====================================
+
+SELECT
+    Local_Acc_No,
+    Stock_Code,
+
+    MAX(Statement) AS MaxOfStatement,
+    MAX(BbhAmount) AS MaxOfBbhAmount,
+    MAX(NsccAmount) AS MaxOfNsccAmount,
+
+    MIN(SecID)
+        KEEP (
+            DENSE_RANK FIRST
+            ORDER BY Statement NULLS LAST, SecID
+        ) AS FirstOfSecID,
+
+    MIN(SecName)
+        KEEP (
+            DENSE_RANK FIRST
+            ORDER BY Statement NULLS LAST, SecName
+        ) AS FirstOfSecName,
+
+    MIN(BbhAcctNum)
+        KEEP (
+            DENSE_RANK FIRST
+            ORDER BY Statement NULLS LAST, BbhAcctNum
+        ) AS FirstOfBbhAcctNum,
+
+    MIN(BbhAcctName)
+        KEEP (
+            DENSE_RANK FIRST
+            ORDER BY Statement NULLS LAST, BbhAcctName
+        ) AS FirstOfBbhAcctName,
+
+    MIN(BbhExtAcctNum)
+        KEEP (
+            DENSE_RANK FIRST
+            ORDER BY Statement NULLS LAST, BbhExtAcctNum
+        ) AS FirstOfBBHExtAcctNum,
+
+    MAX(NsccExtAcctNum)
+        KEEP (
+            DENSE_RANK LAST
+            ORDER BY Statement NULLS LAST, NsccExtAcctNum
+        ) AS LastOfNSCCExtAcctNum,
+
+    MAX(Price) AS MaxOfPrice,
+
+    MIN(Freq)
+        KEEP (
+            DENSE_RANK FIRST
+            ORDER BY Statement NULLS LAST, Freq
+        ) AS FirstOfFreq
+
+FROM tbl_MasterPositionBreaks mp
+-- WHERE SourceDB = 'MONTHLY'   -- Uncomment if this query is intended for a single SourceDB
+GROUP BY
+    Local_Acc_No,
+    Stock_Code;
 
     WHERE BaseData.ls_type IN (9030,9099)
 );
