@@ -1,235 +1,69 @@
-WITH BaseData AS
-(
-    SELECT
-        b.Agent_Code,
-        b.Local_Acc_No,
-        b.corr_acc_no,
+Subject: CA-Income Breaks 50K – SQL Refactoring and Code Optimization
+for Review
 
-        i.Item_ID,
-        i.stock_id,
-        i.ls_type,
-        i.amount_5,
-        i.amount_6,
-        i.stmt_date,
-        i.reference,
-        i.string_6,
-        i.string_13,
-        i.string_14,
-        i.string_21,
-        i.string_27,
-        i.string_28,
-        i.string_29,
-        i.reason_type_id,
-        i.note_id,
-        i.bran_code,
-        i.SYS_ENTRY_DATE,
-        i.flag_2,
+Hi Mark,
 
-        NVL(s.Stock_Code,'N/A') AS Stock_Code,
+As per your review comments and suggestions, I have completed the SQL
+refactoring and code optimization for the CA-Income Breaks 50K report.
 
-        d.code_name,
-        rt.name AS ReasonType,
-        rc.name AS Dept,
-        n.note,
+The following changes have been implemented:
 
-        CASE
-            WHEN i.string_14 IS NOT NULL
-             AND TRIM(i.string_14) <> ''
-            THEN TRIM(i.string_14)
+1.  Consolidated Parent Amount CTE
+    -   The four individual Parent Amount CTEs for the different
+        SourceDB values (MONTHLY, HEDGE, NSCC, and SWIFTDAILY) have been
+        consolidated into a single reusable CTE
+        (qry_MasterBreaks_Parent_Amts).
+    -   The common logic has been centralized while preserving the
+        existing functionality.
+2.  Removed Duplicate UNION ALL Logic
+    -   The four separate SELECT statements (one for each SourceDB) have
+        been consolidated into a single generic SELECT statement.
+    -   This removes duplicate code while maintaining the same output
+        and business logic.
+3.  Refactored Common CTE Logic
+    -   The common logic between tbl_BreakDetails_MONTHLYAndHEDGE and
+        tbl_MasterPositionBreaks has been extracted into a common base
+        CTE.
+    -   Both CTEs now reuse the common dataset, reducing duplication and
+        improving maintainability.
+    -   All existing joins, columns, aliases, and business logic have
+        been retained.
+4.  Oracle Aggregate Enhancement
+    -   The aggregate expressions have been updated to use Oracle’s KEEP
+        (DENSE_RANK FIRST/LAST ORDER BY …) where applicable for
+        first/last values, in line with Oracle best practices.
 
-            WHEN SUBSTR(b.Local_Acc_No,8,1)='-'
-            THEN SUBSTR(b.Local_Acc_No,1,7)
+Overall, the objective of these changes was to reduce duplicate code,
+improve readability and maintainability, and preserve the existing
+report output and business logic.
 
-            ELSE 'OMNIBUS'
-        END AS BbhAcctNum,
+Please find the attached files for your review:
 
-        CASE
-            WHEN b.AGENT_CODE LIKE '%MUTUAL FUNDS - NSCC TRANS POS%'
-                THEN 'NSCC'
+-   Current SQL (Refactored / Optimized Version)
+-   Previous SQL (Original Version before Refactoring)
 
-            WHEN b.AGENT_CODE LIKE '%MUTUAL FUNDS - MONTHLY POSITIONS%'
-                THEN 'MONTHLY'
+Could you please review the implementation and let me know if this
+approach looks good?
 
-            WHEN b.AGENT_CODE LIKE '%MUTUAL FUNDS - SWIFT DAILY POSITIONS%'
-                THEN 'SWIFTDAILY'
+If this implementation is approved, I will apply the same refactoring
+approach to the remaining departmental break reports, where only the
+department-specific filtering differs. This includes reports such as:
 
-            WHEN b.AGENT_CODE LIKE '%MUTUAL FUNDS - HEDGE%'
-                THEN 'HEDGE'
-        END AS SourceDB
+-   CA Band
+-   MF-A
+-   CAG TP Set
+-   CAG TP TDR
+-   AF TP TNR
+-   TP Set
+-   R&DA
+-   and the remaining departmental break reports.
 
-    FROM bank b
+The same optimization pattern will be applied while preserving the
+existing business logic and report output.
 
-    JOIN item i
-      ON b.corr_acc_no=i.corr_acc_no
+Please let me know if you have any feedback or if any further changes
+are required.
 
-    LEFT JOIN stck s
-      ON i.stock_id=s.stock_id
+Thanks & Regards,
 
-    LEFT JOIN dcod d
-      ON i.bran_code=d.codec
-
-    LEFT JOIN tlm_ref_reason_type rt
-      ON i.reason_type_id=rt.reason_type_id
-
-    LEFT JOIN tlm_ref_reason_category rc
-      ON rt.reason_category_id=rc.reason_category_id
-
-    LEFT JOIN tlm_bdr_note n
-      ON i.note_id=n.id
-
-    WHERE
-        NVL(i.flag_2,0)=0
-    AND
-    (
-           b.AGENT_CODE LIKE '%MUTUAL FUNDS - NSCC TRANS POS%'
-        OR b.AGENT_CODE LIKE '%MUTUAL FUNDS - MONTHLY POSITIONS%'
-        OR b.AGENT_CODE LIKE '%MUTUAL FUNDS - SWIFT DAILY POSITIONS%'
-        OR b.AGENT_CODE LIKE '%MUTUAL FUNDS - HEDGE%'
-    )
-),
-
-tbl_BreakDetails_MONTHLYAndHEDGE AS
-(
-    SELECT
-        BaseData.Local_Acc_No,
-        BaseData.Stock_Code AS ISIN,
-        BaseData.BbhAcctNum,
-        BaseData.stmt_date AS Statement,
-
-        CASE
-            WHEN BaseData.ls_type IN (9106,9129)
-            THEN BaseData.amount_6
-            ELSE -BaseData.amount_6
-        END AS BreakQuantity,
-
-        TRUNC(BaseData.SYS_ENTRY_DATE) AS BreakOpened,
-
-        BaseData.Item_ID AS BreakDesc,
-        BaseData.string_6 AS AuditTrail,
-        BaseData.Dept,
-        BaseData.code_name AS BreakType,
-        BaseData.SourceDB,
-        BaseData.ReasonType,
-        BaseData.note AS Comments,
-        BaseData.Item_ID,
-
-        CASE
-            WHEN BaseData.ls_type IN (9105,9106)
-            THEN BaseData.reference
-        END AS TAExtAcctNum,
-
-        CASE
-            WHEN BaseData.ls_type IN (9128,9129)
-            THEN BaseData.string_21
-        END AS BbhExtAcctNum,
-
-        CAST(NULL AS DATE) AS Resolved
-
-    FROM BaseData
-
-    WHERE BaseData.ls_type NOT IN (9030,9099)
-),
-
-tbl_MasterPositionBreaks AS
-(
-    SELECT
-        BaseData.Agent_Code,
-        BaseData.Local_Acc_No,
-        BaseData.Stock_Code,
-
-        BaseData.string_27 AS SecID,
-        BaseData.string_28 AS SecName,
-
-        CASE
-            WHEN BaseData.ls_type=9030
-            THEN BaseData.amount_6
-            ELSE 0
-        END AS BbhAmount,
-
-        CASE
-            WHEN BaseData.ls_type=9030
-            THEN 0
-            ELSE BaseData.amount_6
-        END AS NsccAmount,
-
-        BaseData.stmt_date AS Statement,
-
-        BaseData.BbhAcctNum,
-
-        BaseData.string_21 AS BBHExtAcctNum,
-        BaseData.string_21 AS NsccExtAcctNum,
-
-        BaseData.amount_5 AS Price,
-
-        'System Entry Date = '
-        || TO_CHAR(BaseData.SYS_ENTRY_DATE,
-                   'MM/DD/YYYY HH24:MI:SS') AS Comments,
-
-        BaseData.SourceDB,
-
-        BaseData.string_29 AS BbhAcctName,
-        BaseData.string_13 AS Freq
-
-    FROM BaseData
-====================================
-
-SELECT
-    Local_Acc_No,
-    Stock_Code,
-
-    MAX(Statement) AS MaxOfStatement,
-    MAX(BbhAmount) AS MaxOfBbhAmount,
-    MAX(NsccAmount) AS MaxOfNsccAmount,
-
-    MIN(SecID)
-        KEEP (
-            DENSE_RANK FIRST
-            ORDER BY Statement NULLS LAST, SecID
-        ) AS FirstOfSecID,
-
-    MIN(SecName)
-        KEEP (
-            DENSE_RANK FIRST
-            ORDER BY Statement NULLS LAST, SecName
-        ) AS FirstOfSecName,
-
-    MIN(BbhAcctNum)
-        KEEP (
-            DENSE_RANK FIRST
-            ORDER BY Statement NULLS LAST, BbhAcctNum
-        ) AS FirstOfBbhAcctNum,
-
-    MIN(BbhAcctName)
-        KEEP (
-            DENSE_RANK FIRST
-            ORDER BY Statement NULLS LAST, BbhAcctName
-        ) AS FirstOfBbhAcctName,
-
-    MIN(BbhExtAcctNum)
-        KEEP (
-            DENSE_RANK FIRST
-            ORDER BY Statement NULLS LAST, BbhExtAcctNum
-        ) AS FirstOfBBHExtAcctNum,
-
-    MAX(NsccExtAcctNum)
-        KEEP (
-            DENSE_RANK LAST
-            ORDER BY Statement NULLS LAST, NsccExtAcctNum
-        ) AS LastOfNSCCExtAcctNum,
-
-    MAX(Price) AS MaxOfPrice,
-
-    MIN(Freq)
-        KEEP (
-            DENSE_RANK FIRST
-            ORDER BY Statement NULLS LAST, Freq
-        ) AS FirstOfFreq
-
-FROM tbl_MasterPositionBreaks mp
--- WHERE SourceDB = 'MONTHLY'   -- Uncomment if this query is intended for a single SourceDB
-GROUP BY
-    Local_Acc_No,
-    Stock_Code;
-
-    WHERE BaseData.ls_type IN (9030,9099)
-);
+Sivakumar
