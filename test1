@@ -1,0 +1,176 @@
+WITH BaseData AS
+(
+    SELECT
+        b.Agent_Code,
+        b.Local_Acc_No,
+        b.corr_acc_no,
+
+        i.Item_ID,
+        i.stock_id,
+        i.ls_type,
+        i.amount_5,
+        i.amount_6,
+        i.stmt_date,
+        i.reference,
+        i.string_6,
+        i.string_13,
+        i.string_14,
+        i.string_21,
+        i.string_27,
+        i.string_28,
+        i.string_29,
+        i.reason_type_id,
+        i.note_id,
+        i.bran_code,
+        i.SYS_ENTRY_DATE,
+        i.flag_2,
+
+        NVL(s.Stock_Code,'N/A') AS Stock_Code,
+
+        d.code_name,
+        rt.name AS ReasonType,
+        rc.name AS Dept,
+        n.note,
+
+        CASE
+            WHEN i.string_14 IS NOT NULL
+             AND TRIM(i.string_14) <> ''
+            THEN TRIM(i.string_14)
+
+            WHEN SUBSTR(b.Local_Acc_No,8,1)='-'
+            THEN SUBSTR(b.Local_Acc_No,1,7)
+
+            ELSE 'OMNIBUS'
+        END AS BbhAcctNum,
+
+        CASE
+            WHEN b.AGENT_CODE LIKE '%MUTUAL FUNDS - NSCC TRANS POS%'
+                THEN 'NSCC'
+
+            WHEN b.AGENT_CODE LIKE '%MUTUAL FUNDS - MONTHLY POSITIONS%'
+                THEN 'MONTHLY'
+
+            WHEN b.AGENT_CODE LIKE '%MUTUAL FUNDS - SWIFT DAILY POSITIONS%'
+                THEN 'SWIFTDAILY'
+
+            WHEN b.AGENT_CODE LIKE '%MUTUAL FUNDS - HEDGE%'
+                THEN 'HEDGE'
+        END AS SourceDB
+
+    FROM bank b
+
+    JOIN item i
+      ON b.corr_acc_no=i.corr_acc_no
+
+    LEFT JOIN stck s
+      ON i.stock_id=s.stock_id
+
+    LEFT JOIN dcod d
+      ON i.bran_code=d.codec
+
+    LEFT JOIN tlm_ref_reason_type rt
+      ON i.reason_type_id=rt.reason_type_id
+
+    LEFT JOIN tlm_ref_reason_category rc
+      ON rt.reason_category_id=rc.reason_category_id
+
+    LEFT JOIN tlm_bdr_note n
+      ON i.note_id=n.id
+
+    WHERE
+        NVL(i.flag_2,0)=0
+    AND
+    (
+           b.AGENT_CODE LIKE '%MUTUAL FUNDS - NSCC TRANS POS%'
+        OR b.AGENT_CODE LIKE '%MUTUAL FUNDS - MONTHLY POSITIONS%'
+        OR b.AGENT_CODE LIKE '%MUTUAL FUNDS - SWIFT DAILY POSITIONS%'
+        OR b.AGENT_CODE LIKE '%MUTUAL FUNDS - HEDGE%'
+    )
+),
+
+tbl_BreakDetails_MONTHLYAndHEDGE AS
+(
+    SELECT
+        BaseData.Local_Acc_No,
+        BaseData.Stock_Code AS ISIN,
+        BaseData.BbhAcctNum,
+        BaseData.stmt_date AS Statement,
+
+        CASE
+            WHEN BaseData.ls_type IN (9106,9129)
+            THEN BaseData.amount_6
+            ELSE -BaseData.amount_6
+        END AS BreakQuantity,
+
+        TRUNC(BaseData.SYS_ENTRY_DATE) AS BreakOpened,
+
+        BaseData.Item_ID AS BreakDesc,
+        BaseData.string_6 AS AuditTrail,
+        BaseData.Dept,
+        BaseData.code_name AS BreakType,
+        BaseData.SourceDB,
+        BaseData.ReasonType,
+        BaseData.note AS Comments,
+        BaseData.Item_ID,
+
+        CASE
+            WHEN BaseData.ls_type IN (9105,9106)
+            THEN BaseData.reference
+        END AS TAExtAcctNum,
+
+        CASE
+            WHEN BaseData.ls_type IN (9128,9129)
+            THEN BaseData.string_21
+        END AS BbhExtAcctNum,
+
+        CAST(NULL AS DATE) AS Resolved
+
+    FROM BaseData
+
+    WHERE BaseData.ls_type NOT IN (9030,9099)
+),
+
+tbl_MasterPositionBreaks AS
+(
+    SELECT
+        BaseData.Agent_Code,
+        BaseData.Local_Acc_No,
+        BaseData.Stock_Code,
+
+        BaseData.string_27 AS SecID,
+        BaseData.string_28 AS SecName,
+
+        CASE
+            WHEN BaseData.ls_type=9030
+            THEN BaseData.amount_6
+            ELSE 0
+        END AS BbhAmount,
+
+        CASE
+            WHEN BaseData.ls_type=9030
+            THEN 0
+            ELSE BaseData.amount_6
+        END AS NsccAmount,
+
+        BaseData.stmt_date AS Statement,
+
+        BaseData.BbhAcctNum,
+
+        BaseData.string_21 AS BBHExtAcctNum,
+        BaseData.string_21 AS NsccExtAcctNum,
+
+        BaseData.amount_5 AS Price,
+
+        'System Entry Date = '
+        || TO_CHAR(BaseData.SYS_ENTRY_DATE,
+                   'MM/DD/YYYY HH24:MI:SS') AS Comments,
+
+        BaseData.SourceDB,
+
+        BaseData.string_29 AS BbhAcctName,
+        BaseData.string_13 AS Freq
+
+    FROM BaseData
+
+    WHERE BaseData.ls_type IN (9030,9099)
+);
