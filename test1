@@ -1,32 +1,33 @@
-Hi Mark,
+SELECT
+    TBMSEB.STOCK_CODE AS ISIN,
+    TBMSEB.SebAcctNum,
 
-As discussed, I have completed the view-based refactoring changes and updated the corresponding report design (RPT) files for all 11 departmental break reports. The updated RPT design files have been placed in the shared folder at the location below for your review.
+    MAX(TBMSEB.SecID)
+        KEEP (DENSE_RANK FIRST ORDER BY TBMSEB.SecID) AS MinOfSecID,
 
-**Shared Folder:**
-[Please add the shared folder path here]
+    MAX(TBMSEB.SecName)
+        KEEP (DENSE_RANK FIRST ORDER BY TBMSEB.SecID) AS FirstOfSecName,
 
-Following our discussion and code review yesterday, I have completed the additional changes based on your suggestion to replace the repeated CTE logic with reusable database views.
+    MAX(TBMSEB.BbhAmount) AS MaxOfBbhAmount,
 
-The following changes have been implemented:
+    MAX(TBMSEB.SebAmount) AS MaxOfSebAmount,
 
-* Created common database views to encapsulate the shared dataset logic instead of repeating the same SQL across each departmental break report.
-* Updated all departmental break report datasets to reference the common views, with only the department-specific filter applied in the respective datasets.
-* Verified the implementation across all 11 departmental break reports, and the report outputs match the existing business logic and expected results.
-* Created the required views in the QC database.
-* Added the necessary `GRANT SELECT` permissions for the newly created views in the QC environment.
+    MAX(TBMSEB.Statement) AS MaxOfStatement,
 
-This approach further reduces code duplication, improves maintainability, and simplifies future enhancements while preserving the existing functionality and report output.
+    MAX(TBMSEB.BbhAcctNum) AS MaxOfBbhAcctNum,
 
-Could you please review the implementation?
+    MAX(TBMSEB.NAV) AS MaxOfNAV,
 
-If everything looks good, we can proceed with deploying the same changes to the Production environment. The Production deployment will include:
+    MAX(TBMSEB.Currency)
+        KEEP (DENSE_RANK FIRST ORDER BY TBMSEB.SecID) AS FirstOfCurrency
 
-* Creating the same database views.
-* Applying the required `GRANT SELECT` permissions for the views.
-* Deploying the updated report design (RPT) files, which reference the new views in their datasets, to the Production environment for testing.
+FROM
+    tbl_MasterPositionBreaks_SEB TBMSEB
 
-Please let me know if you have any feedback or if any further changes are required.
+GROUP BY
+    TBMSEB.STOCK_CODE,
+    TBMSEB.SebAcctNum
 
-Thanks & Regards,
-
-Sivakumar
+ORDER BY
+    MAX(TBMSEB.SecID)
+        KEEP (DENSE_RANK FIRST ORDER BY TBMSEB.SecID);
