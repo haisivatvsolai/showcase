@@ -1,33 +1,168 @@
-SELECT
-    TBMSEB.STOCK_CODE AS ISIN,
-    TBMSEB.SebAcctNum,
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Proposed Approach - SQL Views, Business Logic and BIRT Formatting</title>
+<style>
+body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#222;line-height:1.5;margin:30px}
+h2{color:#1F4E79;margin-bottom:4px}
+h3{color:#1F4E79;margin-top:20px;margin-bottom:6px}
+ul{margin-top:4px}
+.note{background:#eef6ff;border-left:4px solid #1F4E79;padding:10px}
+.footer{margin-top:30px}
+</style>
+</head>
+<body>
 
-    MAX(TBMSEB.SecID)
-        KEEP (DENSE_RANK FIRST ORDER BY TBMSEB.SecID) AS MinOfSecID,
+<p><strong>Subject:</strong> Proposed Approach for SQL Views, Business Logic and BIRT Formatting</p>
 
-    MAX(TBMSEB.SecName)
-        KEEP (DENSE_RANK FIRST ORDER BY TBMSEB.SecID) AS FirstOfSecName,
+<p>Hi Team,</p>
 
-    MAX(TBMSEB.BbhAmount) AS MaxOfBbhAmount,
+<p>Thank you for the review comments and suggestions regarding the report implementation. We have reviewed the proposed approach internally and would like to share our observations and a recommended implementation approach for your consideration.</p>
 
-    MAX(TBMSEB.SebAmount) AS MaxOfSebAmount,
+<p>We fully agree with replacing duplicated CTEs with reusable Oracle Views. We believe this is a strong architectural improvement that will significantly reduce SQL duplication while improving maintainability and reusability across reports.</p>
 
-    MAX(TBMSEB.Statement) AS MaxOfStatement,
+<h3>1. Oracle Views for Common Business Logic</h3>
 
-    MAX(TBMSEB.BbhAcctNum) AS MaxOfBbhAcctNum,
+<p>We recommend implementing all <strong>common business logic</strong> inside reusable Oracle Views rather than duplicating it across report datasets or BIRT cell expressions.</p>
 
-    MAX(TBMSEB.NAV) AS MaxOfNAV,
+<p>This includes:</p>
 
-    MAX(TBMSEB.Currency)
-        KEEP (DENSE_RANK FIRST ORDER BY TBMSEB.SecID) AS FirstOfCurrency
+<ul>
+<li>CASE expressions</li>
+<li>Derived columns</li>
+<li>Business calculations</li>
+<li>BBH Account Number generation</li>
+<li>ISIN mapping</li>
+<li>Exposure calculations</li>
+<li>Common joins</li>
+<li>Hidden calculation fields used internally by reports</li>
+</ul>
 
-FROM
-    tbl_MasterPositionBreaks_SEB TBMSEB
+<p>These represent business rules rather than presentation logic. Keeping them centralized in Views provides:</p>
 
-GROUP BY
-    TBMSEB.STOCK_CODE,
-    TBMSEB.SebAcctNum
+<ul>
+<li>Single implementation of business rules</li>
+<li>Elimination of duplicate SQL logic</li>
+<li>Better consistency across reports</li>
+<li>Improved maintainability</li>
+<li>Reduced regression effort</li>
+<li>Simplified future enhancements</li>
+</ul>
 
-ORDER BY
-    MAX(TBMSEB.SecID)
-        KEEP (DENSE_RANK FIRST ORDER BY TBMSEB.SecID);
+<h3>2. Dataset SQL</h3>
+
+<p>The Dataset SQL can remain lightweight and primarily contain:</p>
+
+<ul>
+<li>References to reusable Views</li>
+<li>Report-specific filters</li>
+<li>Sorting</li>
+<li>Minimal report-specific business logic only where absolutely required</li>
+</ul>
+
+<h3>3. BIRT Layer</h3>
+
+<p>We agree that presentation-related formatting is best handled within BIRT. Therefore, we propose moving only presentation concerns to the report layer, such as:</p>
+
+<ul>
+<li>Number formatting</li>
+<li>Date formatting</li>
+<li>Fonts</li>
+<li>Alignment</li>
+<li>Colours</li>
+<li>Conditional highlighting</li>
+<li>Layout-related formatting</li>
+</ul>
+
+<p>This keeps BIRT focused on presentation while the database layer remains responsible for business rules.</p>
+
+<h3>4. Development and Maintenance Impact</h3>
+
+<p>Currently, approximately <strong>32 reports</strong> have been completed under the Mutual Funds module. However, the overall project consists of approximately <strong>180 reports</strong>, with Mutual Funds representing only one functional area.</p>
+
+<p>If common business logic is moved from reusable Views into Dataset SQL or BIRT cell-level expressions, it would require:</p>
+
+<ul>
+<li>Repeated implementation of the same logic across multiple reports</li>
+<li>Repeated updates to report datasets</li>
+<li>Configuration of numerous BIRT cell expressions</li>
+<li>Extensive regression testing</li>
+<li>Higher development effort</li>
+<li>Greater risk of inconsistencies due to duplicated logic</li>
+</ul>
+
+<p>Many business rules, including BBH Account Number generation, ISIN mapping and account derivation, are common across multiple reports. Implementing the same logic repeatedly at the report level would significantly increase maintenance effort.</p>
+
+<h3>5. Long-Term Maintainability</h3>
+
+<p>Centralizing business logic within reusable Oracle Views offers several long-term benefits:</p>
+
+<ul>
+<li>Improved code reuse</li>
+<li>Better maintainability</li>
+<li>Consistent business rule implementation</li>
+<li>Reduced duplicate code</li>
+<li>Faster development for the remaining reports</li>
+<li>Lower regression risk</li>
+<li>Simpler future enhancements</li>
+</ul>
+
+<h3>6. Future Reporting Tool Migration</h3>
+
+<p>Keeping business logic within the database layer also improves portability. If another reporting platform is introduced in the future, the same Views can be reused without rewriting the business logic. Conversely, embedding business rules inside BIRT would require redevelopment during any future migration.</p>
+
+<h3>Proposed Architecture</h3>
+
+<div class="note">
+<b>Database Tables</b><br>
+Physical data only
+<br><br>
+↓
+<br><br>
+<b>Oracle Views</b><br>
+Common joins<br>
+Business rules<br>
+Derived columns<br>
+CASE expressions<br>
+Shared calculations<br>
+Hidden business fields
+<br><br>
+↓
+<br><br>
+<b>Dataset SQL</b><br>
+View references<br>
+Report-specific filters<br>
+Ordering<br>
+Minimal report-specific logic
+<br><br>
+↓
+<br><br>
+<b>BIRT</b><br>
+Number formatting<br>
+Date formatting<br>
+Fonts<br>
+Colours<br>
+Alignment<br>
+Conditional formatting<br>
+Layout
+</div>
+
+<h3>Conclusion</h3>
+
+<p>We believe this approach provides the best balance between maintainability, reusability, consistency, implementation effort and long-term scalability while still achieving the objective of eliminating duplicated SQL code.</p>
+
+<p>We fully support adopting Oracle Views for reusable logic and recommend limiting BIRT to presentation responsibilities while keeping common business rules centralized within the database layer.</p>
+
+<p>We would appreciate your feedback on this proposed approach and are happy to discuss further if required.</p>
+
+<p>Thank you.</p>
+
+<div class="footer">
+Kind regards,<br><br>
+<b>Sivakumar</b><br>
+Senior Consultant / Development Team
+</div>
+
+</body>
+</html>
