@@ -1,168 +1,279 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Proposed Approach - SQL Views, Business Logic and BIRT Formatting</title>
-<style>
-body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#222;line-height:1.5;margin:30px}
-h2{color:#1F4E79;margin-bottom:4px}
-h3{color:#1F4E79;margin-top:20px;margin-bottom:6px}
-ul{margin-top:4px}
-.note{background:#eef6ff;border-left:4px solid #1F4E79;padding:10px}
-.footer{margin-top:30px}
-</style>
-</head>
-<body>
+CREATE OR REPLACE VIEW V_TBL_BREAKDETAILS_MONTHLYANDHEDGE
+AS
+SELECT
+    /* BANK */
+    B.LOCAL_ACC_NO,
+    B.AGENT_CODE,
+    B.CORR_ACC_NO,
 
-<p><strong>Subject:</strong> Proposed Approach for SQL Views, Business Logic and BIRT Formatting</p>
+    /* ITEM */
+    I.ITEM_ID,
+    I.STOCK_ID,
+    I.BRAN_CODE,
+    I.REASON_TYPE_ID,
+    I.NOTE_ID,
 
-<p>Hi Team,</p>
+    I.STRING_6,
+    I.STRING_14,
+    I.STRING_21,
 
-<p>Thank you for the review comments and suggestions regarding the report implementation. We have reviewed the proposed approach internally and would like to share our observations and a recommended implementation approach for your consideration.</p>
+    I.REFERENCE,
 
-<p>We fully agree with replacing duplicated CTEs with reusable Oracle Views. We believe this is a strong architectural improvement that will significantly reduce SQL duplication while improving maintainability and reusability across reports.</p>
+    I.AMOUNT_6,
+    I.SYS_ENTRY_DATE,
+    I.STMT_DATE,
 
-<h3>1. Oracle Views for Common Business Logic</h3>
+    I.LS_TYPE,
+    I.FLAG_2,
 
-<p>We recommend implementing all <strong>common business logic</strong> inside reusable Oracle Views rather than duplicating it across report datasets or BIRT cell expressions.</p>
+    /* STOCK */
+    S.STOCK_CODE,
 
-<p>This includes:</p>
+    /* DEPARTMENT */
+    D.CODE_NAME,
 
-<ul>
-<li>CASE expressions</li>
-<li>Derived columns</li>
-<li>Business calculations</li>
-<li>BBH Account Number generation</li>
-<li>ISIN mapping</li>
-<li>Exposure calculations</li>
-<li>Common joins</li>
-<li>Hidden calculation fields used internally by reports</li>
-</ul>
+    /* REASON */
+    RT.NAME AS REASON_NAME,
 
-<p>These represent business rules rather than presentation logic. Keeping them centralized in Views provides:</p>
+    RC.NAME AS REASON_CATEGORY,
 
-<ul>
-<li>Single implementation of business rules</li>
-<li>Elimination of duplicate SQL logic</li>
-<li>Better consistency across reports</li>
-<li>Improved maintainability</li>
-<li>Reduced regression effort</li>
-<li>Simplified future enhancements</li>
-</ul>
+    /* NOTE */
+    N.NOTE
 
-<h3>2. Dataset SQL</h3>
+FROM BANK B
 
-<p>The Dataset SQL can remain lightweight and primarily contain:</p>
+INNER JOIN ITEM I
+    ON B.CORR_ACC_NO = I.CORR_ACC_NO
 
-<ul>
-<li>References to reusable Views</li>
-<li>Report-specific filters</li>
-<li>Sorting</li>
-<li>Minimal report-specific business logic only where absolutely required</li>
-</ul>
+LEFT JOIN STCK S
+    ON I.STOCK_ID = S.STOCK_ID
 
-<h3>3. BIRT Layer</h3>
+LEFT JOIN DCOD D
+    ON I.BRAN_CODE = D.CODEC
 
-<p>We agree that presentation-related formatting is best handled within BIRT. Therefore, we propose moving only presentation concerns to the report layer, such as:</p>
+LEFT JOIN TLM_REF_REASON_TYPE RT
+    ON I.REASON_TYPE_ID = RT.REASON_TYPE_ID
 
-<ul>
-<li>Number formatting</li>
-<li>Date formatting</li>
-<li>Fonts</li>
-<li>Alignment</li>
-<li>Colours</li>
-<li>Conditional highlighting</li>
-<li>Layout-related formatting</li>
-</ul>
+LEFT JOIN TLM_REF_REASON_CATEGORY RC
+    ON RT.REASON_CATEGORY_ID = RC.REASON_CATEGORY_ID
 
-<p>This keeps BIRT focused on presentation while the database layer remains responsible for business rules.</p>
+LEFT JOIN TLM_BDR_NOTE N
+    ON I.NOTE_ID = N.ID
 
-<h3>4. Development and Maintenance Impact</h3>
+WHERE
+(
+       B.AGENT_CODE LIKE '%MUTUAL FUNDS - NSCC TRANS POS%'
+    OR B.AGENT_CODE LIKE '%MUTUAL FUNDS - MONTHLY POSITIONS%'
+    OR B.AGENT_CODE LIKE '%MUTUAL FUNDS - SWIFT DAILY POSITIONS%'
+    OR B.AGENT_CODE LIKE '%MUTUAL FUNDS - HEDGE%'
+)
+AND I.LS_TYPE NOT IN (9030,9099)
+AND NVL(I.FLAG_2,0)=0;
 
-<p>Currently, approximately <strong>32 reports</strong> have been completed under the Mutual Funds module. However, the overall project consists of approximately <strong>180 reports</strong>, with Mutual Funds representing only one functional area.</p>
+==============================================
 
-<p>If common business logic is moved from reusable Views into Dataset SQL or BIRT cell-level expressions, it would require:</p>
+CREATE OR REPLACE VIEW V_TBL_MASTERPOSITIONBREAKS
+AS
+SELECT
+    /* BANK */
+    B.AGENT_CODE,
+    B.LOCAL_ACC_NO,
+    B.CORR_ACC_NO,
 
-<ul>
-<li>Repeated implementation of the same logic across multiple reports</li>
-<li>Repeated updates to report datasets</li>
-<li>Configuration of numerous BIRT cell expressions</li>
-<li>Extensive regression testing</li>
-<li>Higher development effort</li>
-<li>Greater risk of inconsistencies due to duplicated logic</li>
-</ul>
+    /* ITEM */
+    I.ITEM_ID,
+    I.STOCK_ID,
+    I.LS_TYPE,
+    I.FLAG_2,
 
-<p>Many business rules, including BBH Account Number generation, ISIN mapping and account derivation, are common across multiple reports. Implementing the same logic repeatedly at the report level would significantly increase maintenance effort.</p>
+    I.STRING_13,
+    I.STRING_14,
+    I.STRING_21,
+    I.STRING_27,
+    I.STRING_28,
+    I.STRING_29,
 
-<h3>5. Long-Term Maintainability</h3>
+    I.AMOUNT_5,
+    I.AMOUNT_6,
 
-<p>Centralizing business logic within reusable Oracle Views offers several long-term benefits:</p>
+    I.STMT_DATE,
+    I.SYS_ENTRY_DATE,
 
-<ul>
-<li>Improved code reuse</li>
-<li>Better maintainability</li>
-<li>Consistent business rule implementation</li>
-<li>Reduced duplicate code</li>
-<li>Faster development for the remaining reports</li>
-<li>Lower regression risk</li>
-<li>Simpler future enhancements</li>
-</ul>
+    /* STOCK */
+    S.STOCK_CODE
 
-<h3>6. Future Reporting Tool Migration</h3>
+FROM BANK B
 
-<p>Keeping business logic within the database layer also improves portability. If another reporting platform is introduced in the future, the same Views can be reused without rewriting the business logic. Conversely, embedding business rules inside BIRT would require redevelopment during any future migration.</p>
+INNER JOIN ITEM I
+    ON B.CORR_ACC_NO = I.CORR_ACC_NO
 
-<h3>Proposed Architecture</h3>
+LEFT JOIN STCK S
+    ON I.STOCK_ID = S.STOCK_ID
 
-<div class="note">
-<b>Database Tables</b><br>
-Physical data only
-<br><br>
-↓
-<br><br>
-<b>Oracle Views</b><br>
-Common joins<br>
-Business rules<br>
-Derived columns<br>
-CASE expressions<br>
-Shared calculations<br>
-Hidden business fields
-<br><br>
-↓
-<br><br>
-<b>Dataset SQL</b><br>
-View references<br>
-Report-specific filters<br>
-Ordering<br>
-Minimal report-specific logic
-<br><br>
-↓
-<br><br>
-<b>BIRT</b><br>
-Number formatting<br>
-Date formatting<br>
-Fonts<br>
-Colours<br>
-Alignment<br>
-Conditional formatting<br>
-Layout
-</div>
+WHERE
+(
+       B.AGENT_CODE LIKE '%MUTUAL FUNDS - NSCC TRANS POS%'
+    OR B.AGENT_CODE LIKE '%MUTUAL FUNDS - MONTHLY POSITIONS%'
+    OR B.AGENT_CODE LIKE '%MUTUAL FUNDS - SWIFT DAILY POSITIONS%'
+    OR B.AGENT_CODE LIKE '%MUTUAL FUNDS - HEDGE%'
+)
+AND I.LS_TYPE IN (9030,9099)
+AND NVL(I.FLAG_2,0)=0;
 
-<h3>Conclusion</h3>
+====================================================
 
-<p>We believe this approach provides the best balance between maintainability, reusability, consistency, implementation effort and long-term scalability while still achieving the objective of eliminating duplicated SQL code.</p>
+CREATE OR REPLACE VIEW V_QRY_MASTERBREAKS_PARENT_AMTS
+AS
+SELECT
 
-<p>We fully support adopting Oracle Views for reusable logic and recommend limiting BIRT to presentation responsibilities while keeping common business rules centralized within the database layer.</p>
+    VMPB.AGENT_CODE,
 
-<p>We would appreciate your feedback on this proposed approach and are happy to discuss further if required.</p>
+    VMPB.LOCAL_ACC_NO,
 
-<p>Thank you.</p>
+    VMPB.STOCK_CODE,
 
-<div class="footer">
-Kind regards,<br><br>
-<b>Sivakumar</b><br>
-Senior Consultant / Development Team
-</div>
+    MAX(VMPB.STMT_DATE) AS MAXOFSTATEMENT,
 
-</body>
-</html>
+    MAX(VMPB.AMOUNT_6) AS MAXOFAMOUNT6,
+
+    MAX(VMPB.AMOUNT_5) AS MAXOFPRICE,
+
+    MIN(VMPB.STRING_27) AS FIRSTOFSECID,
+
+    MIN(VMPB.STRING_28) AS FIRSTOFSECNAME,
+
+    MIN(VMPB.STRING_14) AS FIRSTOFSTRING14,
+
+    MIN(VMPB.STRING_21) AS FIRSTOFSTRING21,
+
+    MAX(VMPB.STRING_21) AS LASTOFSTRING21,
+
+    MIN(VMPB.STRING_29) AS FIRSTOFBBHACCTNAME,
+
+    MIN(VMPB.STRING_13) AS FIRSTOFFREQ
+
+FROM
+    V_TBL_MASTERPOSITIONBREAKS VMPB
+
+GROUP BY
+
+    VMPB.AGENT_CODE,
+
+    VMPB.LOCAL_ACC_NO,
+
+    VMPB.STOCK_CODE;
+	
+	===============================================================
+	
+	
+	SELECT
+    TBMH.REASON_CATEGORY AS DEPT,
+
+    TBMH.CODE_NAME || ' - ' || TBMH.REASON_NAME AS TYPE,
+
+    TBMH.STMT_DATE AS "PARENT BREAK DATE",
+
+    PAHEDGE.MAXOFSTATEMENT AS "STATEMENT DATE(NEW)",
+
+    TRUNC(SYSDATE) - TRUNC(TBMH.SYS_ENTRY_DATE) AS DISCVAGE,
+
+    ROUND(TRUNC(SYSDATE) - TRUNC(TBMH.STMT_DATE)) AS "RECON AGE",
+
+    PAHEDGE.FIRSTOFSECID AS BBHNUM,
+
+    NVL(TBMH.STOCK_CODE,'N/A') AS ISIN,
+
+    PAHEDGE.FIRSTOFSECNAME AS "ASSET DESCRIPTION",
+
+    CASE
+        WHEN TBMH.STRING_14 IS NOT NULL
+         AND TRIM(TBMH.STRING_14) <> ''
+        THEN TRIM(TBMH.STRING_14)
+        WHEN SUBSTR(TBMH.LOCAL_ACC_NO,8,1)='-'
+        THEN SUBSTR(TBMH.LOCAL_ACC_NO,1,7)
+        ELSE 'OMNIBUS'
+    END AS BBHACCTNUM,
+
+    PAHEDGE.FIRSTOFBBHACCTNAME AS BBHACCTNAME,
+
+    PAHEDGE.FIRSTOFSTRING21 AS BBHEXTACTNUM,
+
+    PAHEDGE.LASTOFSTRING21 AS FUNDEXTACCTNUM,
+
+    TO_CHAR(
+        PAHEDGE.MAXOFBBHAMOUNT,
+        'FM999G999G999G999G990D000000'
+    ) AS BBHAMOUNT,
+
+    TO_CHAR(
+        PAHEDGE.MAXOFNSCCAMOUNT,
+        'FM999G999G999G999G990D000000'
+    ) AS FUNDAMOUNT,
+
+    TO_CHAR(
+        ABS(PAHEDGE.MAXOFBBHAMOUNT - PAHEDGE.MAXOFNSCCAMOUNT),
+        'FM999G999G999G999G990D000000'
+    ) AS BREAK,
+
+    CASE
+        WHEN TBMH.LS_TYPE IN (9106,9129)
+        THEN TBMH.AMOUNT_6
+        ELSE -TBMH.AMOUNT_6
+    END AS CHILDBREAK,
+
+    CASE
+        WHEN TBMH.LS_TYPE IN (9106,9129)
+        THEN TBMH.AMOUNT_6
+        ELSE -TBMH.AMOUNT_6
+    END * NVL(PAHEDGE.MAXOFPRICE,0) AS EXPOSURE,
+
+    TBMH.STRING_6 AS "BREAK DESCRIPTION",
+
+    TBMH.NOTE AS COMMENTS,
+
+    CASE
+        WHEN TBMH.AGENT_CODE LIKE '%MUTUAL FUNDS - NSCC TRANS POS%'
+        THEN 'NSCC'
+        WHEN TBMH.AGENT_CODE LIKE '%MUTUAL FUNDS - MONTHLY POSITIONS%'
+        THEN 'MONTHLY'
+        WHEN TBMH.AGENT_CODE LIKE '%MUTUAL FUNDS - SWIFT DAILY POSITIONS%'
+        THEN 'SWIFTDAILY'
+        WHEN TBMH.AGENT_CODE LIKE '%MUTUAL FUNDS - HEDGE%'
+        THEN 'HEDGE'
+    END AS SOURCEDB
+
+FROM
+    V_TBL_BREAKDETAILS_MONTHLYANDHEDGE TBMH
+
+INNER JOIN
+    V_QRY_MASTERBREAKS_PARENT_AMTS PAHEDGE
+ON  PAHEDGE.LOCAL_ACC_NO = TBMH.LOCAL_ACC_NO
+AND PAHEDGE.STOCK_CODE   = TBMH.STOCK_CODE
+
+WHERE
+    UPPER(TBMH.REASON_CATEGORY) = 'CA-INCOME'
+AND CASE
+        WHEN TBMH.AGENT_CODE LIKE '%MUTUAL FUNDS - NSCC TRANS POS%'
+        THEN 'NSCC'
+        WHEN TBMH.AGENT_CODE LIKE '%MUTUAL FUNDS - MONTHLY POSITIONS%'
+        THEN 'MONTHLY'
+        WHEN TBMH.AGENT_CODE LIKE '%MUTUAL FUNDS - SWIFT DAILY POSITIONS%'
+        THEN 'SWIFTDAILY'
+        WHEN TBMH.AGENT_CODE LIKE '%MUTUAL FUNDS - HEDGE%'
+        THEN 'HEDGE'
+    END IN ('SWIFTDAILY','NSCC','HEDGE','MONTHLY')
+AND UPPER(TBMH.REASON_NAME) <> 'RESOLVED'
+AND ABS(
+        (
+            CASE
+                WHEN TBMH.LS_TYPE IN (9106,9129)
+                THEN TBMH.AMOUNT_6
+                ELSE -TBMH.AMOUNT_6
+            END
+        ) * NVL(PAHEDGE.MAXOFPRICE,0)
+    ) > 50000
+
+ORDER BY
+    TBMH.REASON_CATEGORY,
+    TYPE,
+    BBHNUM;
