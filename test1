@@ -1,279 +1,142 @@
-CREATE OR REPLACE VIEW V_TBL_BREAKDETAILS_MONTHLYANDHEDGE
-AS
-SELECT
-    /* BANK */
-    B.LOCAL_ACC_NO,
-    B.AGENT_CODE,
-    B.CORR_ACC_NO,
-
-    /* ITEM */
-    I.ITEM_ID,
-    I.STOCK_ID,
-    I.BRAN_CODE,
-    I.REASON_TYPE_ID,
-    I.NOTE_ID,
-
-    I.STRING_6,
-    I.STRING_14,
-    I.STRING_21,
-
-    I.REFERENCE,
-
-    I.AMOUNT_6,
-    I.SYS_ENTRY_DATE,
-    I.STMT_DATE,
-
-    I.LS_TYPE,
-    I.FLAG_2,
-
-    /* STOCK */
-    S.STOCK_CODE,
-
-    /* DEPARTMENT */
-    D.CODE_NAME,
-
-    /* REASON */
-    RT.NAME AS REASON_NAME,
-
-    RC.NAME AS REASON_CATEGORY,
-
-    /* NOTE */
-    N.NOTE
-
-FROM BANK B
-
-INNER JOIN ITEM I
-    ON B.CORR_ACC_NO = I.CORR_ACC_NO
-
-LEFT JOIN STCK S
-    ON I.STOCK_ID = S.STOCK_ID
-
-LEFT JOIN DCOD D
-    ON I.BRAN_CODE = D.CODEC
-
-LEFT JOIN TLM_REF_REASON_TYPE RT
-    ON I.REASON_TYPE_ID = RT.REASON_TYPE_ID
-
-LEFT JOIN TLM_REF_REASON_CATEGORY RC
-    ON RT.REASON_CATEGORY_ID = RC.REASON_CATEGORY_ID
-
-LEFT JOIN TLM_BDR_NOTE N
-    ON I.NOTE_ID = N.ID
-
-WHERE
-(
-       B.AGENT_CODE LIKE '%MUTUAL FUNDS - NSCC TRANS POS%'
-    OR B.AGENT_CODE LIKE '%MUTUAL FUNDS - MONTHLY POSITIONS%'
-    OR B.AGENT_CODE LIKE '%MUTUAL FUNDS - SWIFT DAILY POSITIONS%'
-    OR B.AGENT_CODE LIKE '%MUTUAL FUNDS - HEDGE%'
-)
-AND I.LS_TYPE NOT IN (9030,9099)
-AND NVL(I.FLAG_2,0)=0;
-
-==============================================
-
-CREATE OR REPLACE VIEW V_TBL_MASTERPOSITIONBREAKS
-AS
-SELECT
-    /* BANK */
-    B.AGENT_CODE,
-    B.LOCAL_ACC_NO,
-    B.CORR_ACC_NO,
-
-    /* ITEM */
-    I.ITEM_ID,
-    I.STOCK_ID,
-    I.LS_TYPE,
-    I.FLAG_2,
-
-    I.STRING_13,
-    I.STRING_14,
-    I.STRING_21,
-    I.STRING_27,
-    I.STRING_28,
-    I.STRING_29,
-
-    I.AMOUNT_5,
-    I.AMOUNT_6,
-
-    I.STMT_DATE,
-    I.SYS_ENTRY_DATE,
-
-    /* STOCK */
-    S.STOCK_CODE
-
-FROM BANK B
-
-INNER JOIN ITEM I
-    ON B.CORR_ACC_NO = I.CORR_ACC_NO
-
-LEFT JOIN STCK S
-    ON I.STOCK_ID = S.STOCK_ID
-
-WHERE
-(
-       B.AGENT_CODE LIKE '%MUTUAL FUNDS - NSCC TRANS POS%'
-    OR B.AGENT_CODE LIKE '%MUTUAL FUNDS - MONTHLY POSITIONS%'
-    OR B.AGENT_CODE LIKE '%MUTUAL FUNDS - SWIFT DAILY POSITIONS%'
-    OR B.AGENT_CODE LIKE '%MUTUAL FUNDS - HEDGE%'
-)
-AND I.LS_TYPE IN (9030,9099)
-AND NVL(I.FLAG_2,0)=0;
-
-====================================================
-
-CREATE OR REPLACE VIEW V_QRY_MASTERBREAKS_PARENT_AMTS
-AS
-SELECT
-
-    VMPB.AGENT_CODE,
-
-    VMPB.LOCAL_ACC_NO,
-
-    VMPB.STOCK_CODE,
-
-    MAX(VMPB.STMT_DATE) AS MAXOFSTATEMENT,
-
-    MAX(VMPB.AMOUNT_6) AS MAXOFAMOUNT6,
-
-    MAX(VMPB.AMOUNT_5) AS MAXOFPRICE,
-
-    MIN(VMPB.STRING_27) AS FIRSTOFSECID,
-
-    MIN(VMPB.STRING_28) AS FIRSTOFSECNAME,
-
-    MIN(VMPB.STRING_14) AS FIRSTOFSTRING14,
-
-    MIN(VMPB.STRING_21) AS FIRSTOFSTRING21,
-
-    MAX(VMPB.STRING_21) AS LASTOFSTRING21,
-
-    MIN(VMPB.STRING_29) AS FIRSTOFBBHACCTNAME,
-
-    MIN(VMPB.STRING_13) AS FIRSTOFFREQ
-
-FROM
-    V_TBL_MASTERPOSITIONBREAKS VMPB
-
-GROUP BY
-
-    VMPB.AGENT_CODE,
-
-    VMPB.LOCAL_ACC_NO,
-
-    VMPB.STOCK_CODE;
-	
-	===============================================================
-	
-	
-	SELECT
-    TBMH.REASON_CATEGORY AS DEPT,
-
-    TBMH.CODE_NAME || ' - ' || TBMH.REASON_NAME AS TYPE,
-
-    TBMH.STMT_DATE AS "PARENT BREAK DATE",
-
-    PAHEDGE.MAXOFSTATEMENT AS "STATEMENT DATE(NEW)",
-
-    TRUNC(SYSDATE) - TRUNC(TBMH.SYS_ENTRY_DATE) AS DISCVAGE,
-
-    ROUND(TRUNC(SYSDATE) - TRUNC(TBMH.STMT_DATE)) AS "RECON AGE",
-
-    PAHEDGE.FIRSTOFSECID AS BBHNUM,
-
-    NVL(TBMH.STOCK_CODE,'N/A') AS ISIN,
-
-    PAHEDGE.FIRSTOFSECNAME AS "ASSET DESCRIPTION",
-
-    CASE
-        WHEN TBMH.STRING_14 IS NOT NULL
-         AND TRIM(TBMH.STRING_14) <> ''
-        THEN TRIM(TBMH.STRING_14)
-        WHEN SUBSTR(TBMH.LOCAL_ACC_NO,8,1)='-'
-        THEN SUBSTR(TBMH.LOCAL_ACC_NO,1,7)
-        ELSE 'OMNIBUS'
-    END AS BBHACCTNUM,
-
-    PAHEDGE.FIRSTOFBBHACCTNAME AS BBHACCTNAME,
-
-    PAHEDGE.FIRSTOFSTRING21 AS BBHEXTACTNUM,
-
-    PAHEDGE.LASTOFSTRING21 AS FUNDEXTACCTNUM,
-
-    TO_CHAR(
-        PAHEDGE.MAXOFBBHAMOUNT,
-        'FM999G999G999G999G990D000000'
-    ) AS BBHAMOUNT,
-
-    TO_CHAR(
-        PAHEDGE.MAXOFNSCCAMOUNT,
-        'FM999G999G999G999G990D000000'
-    ) AS FUNDAMOUNT,
-
-    TO_CHAR(
-        ABS(PAHEDGE.MAXOFBBHAMOUNT - PAHEDGE.MAXOFNSCCAMOUNT),
-        'FM999G999G999G999G990D000000'
-    ) AS BREAK,
-
-    CASE
-        WHEN TBMH.LS_TYPE IN (9106,9129)
-        THEN TBMH.AMOUNT_6
-        ELSE -TBMH.AMOUNT_6
-    END AS CHILDBREAK,
-
-    CASE
-        WHEN TBMH.LS_TYPE IN (9106,9129)
-        THEN TBMH.AMOUNT_6
-        ELSE -TBMH.AMOUNT_6
-    END * NVL(PAHEDGE.MAXOFPRICE,0) AS EXPOSURE,
-
-    TBMH.STRING_6 AS "BREAK DESCRIPTION",
-
-    TBMH.NOTE AS COMMENTS,
-
-    CASE
-        WHEN TBMH.AGENT_CODE LIKE '%MUTUAL FUNDS - NSCC TRANS POS%'
-        THEN 'NSCC'
-        WHEN TBMH.AGENT_CODE LIKE '%MUTUAL FUNDS - MONTHLY POSITIONS%'
-        THEN 'MONTHLY'
-        WHEN TBMH.AGENT_CODE LIKE '%MUTUAL FUNDS - SWIFT DAILY POSITIONS%'
-        THEN 'SWIFTDAILY'
-        WHEN TBMH.AGENT_CODE LIKE '%MUTUAL FUNDS - HEDGE%'
-        THEN 'HEDGE'
-    END AS SOURCEDB
-
-FROM
-    V_TBL_BREAKDETAILS_MONTHLYANDHEDGE TBMH
-
-INNER JOIN
-    V_QRY_MASTERBREAKS_PARENT_AMTS PAHEDGE
-ON  PAHEDGE.LOCAL_ACC_NO = TBMH.LOCAL_ACC_NO
-AND PAHEDGE.STOCK_CODE   = TBMH.STOCK_CODE
-
-WHERE
-    UPPER(TBMH.REASON_CATEGORY) = 'CA-INCOME'
-AND CASE
-        WHEN TBMH.AGENT_CODE LIKE '%MUTUAL FUNDS - NSCC TRANS POS%'
-        THEN 'NSCC'
-        WHEN TBMH.AGENT_CODE LIKE '%MUTUAL FUNDS - MONTHLY POSITIONS%'
-        THEN 'MONTHLY'
-        WHEN TBMH.AGENT_CODE LIKE '%MUTUAL FUNDS - SWIFT DAILY POSITIONS%'
-        THEN 'SWIFTDAILY'
-        WHEN TBMH.AGENT_CODE LIKE '%MUTUAL FUNDS - HEDGE%'
-        THEN 'HEDGE'
-    END IN ('SWIFTDAILY','NSCC','HEDGE','MONTHLY')
-AND UPPER(TBMH.REASON_NAME) <> 'RESOLVED'
-AND ABS(
-        (
-            CASE
-                WHEN TBMH.LS_TYPE IN (9106,9129)
-                THEN TBMH.AMOUNT_6
-                ELSE -TBMH.AMOUNT_6
-            END
-        ) * NVL(PAHEDGE.MAXOFPRICE,0)
-    ) > 50000
-
-ORDER BY
-    TBMH.REASON_CATEGORY,
-    TYPE,
-    BBHNUM;
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>RE: Proposed Approach for SQL Views, Business Logic and BIRT Formatting</title>
+<style>
+    body {
+        font-family: Calibri, Arial, sans-serif;
+        font-size: 11pt;
+        color: #000000;
+        line-height: 1.6;
+        margin: 25px;
+    }
+
+    p {
+        margin: 12px 0;
+    }
+
+    ul {
+        margin-top: 8px;
+        margin-bottom: 15px;
+    }
+
+    li {
+        margin-bottom: 10px;
+    }
+
+    .heading {
+        font-weight: bold;
+        font-size: 14pt;
+        color: #1F4E79;
+    }
+
+    .section {
+        font-weight: bold;
+    }
+
+    .footer {
+        margin-top: 30px;
+    }
+</style>
+</head>
+
+<body>
+
+<p>Hi Asit,</p>
+
+<p>
+Thank you for your clarification and for outlining the expected architecture.
+Based on your guidance, we have completed the implementation for the first two reports by following the proposed approach as closely as possible.
+</p>
+
+<p class="section">The implementation has been carried out as follows:</p>
+
+<ul>
+
+<li>
+<b>Two generic views have been created</b>, as requested:
+<ul>
+<li>One view for <b>Position Breaks (ls_type = 9030, 9099)</b>.</li>
+<li>One view for <b>Break Details (ls_type &lt;&gt; 9030, 9099)</b>.</li>
+</ul>
+
+These views are responsible only for retrieving the required data from the underlying tables and do not contain any report-specific business logic.
+</li>
+
+<li>
+<b>Business logic has been moved out of the views</b> and implemented in the
+<b>BIRT report dataset SELECT query</b>, in line with your recommendation.
+</li>
+
+<li>
+<b>Formatting logic</b> (date formats, number formats, etc.) has been removed
+from both the SQL views and the dataset queries. The formatting is now handled
+at the <b>BIRT cell/column level</b>.
+</li>
+
+</ul>
+
+<p class="section">Aggregation Logic</p>
+
+<p>
+Regarding the aggregation logic, we evaluated different implementation
+approaches. Since the aggregation calculations are tightly coupled with the
+corresponding business rules, separating them completely from the aggregation
+logic would significantly complicate the implementation and reduce
+maintainability.
+</p>
+
+<p>
+Based on our earlier discussion and agreement, we have therefore implemented
+the aggregation portion using a <b>single reusable CTE</b>. This CTE performs
+the common aggregation logic required for the different SourceDB values
+(<b>Daily, Monthly, Hedge, NSCC</b>, etc.) and contains only the business logic
+that is inherently required for those aggregation calculations. The report
+dataset then uses this common CTE together with a single SELECT statement to
+retrieve the final output.
+</p>
+
+<p class="section">With this approach:</p>
+
+<ul>
+<li>The views remain <b>generic and reusable</b>.</li>
+
+<li>Report-specific business logic remains <b>outside the views</b>.</li>
+
+<li>Formatting is handled entirely within <b>BIRT</b>.</li>
+
+<li>
+Common aggregation logic is centralized in a
+<b>single reusable CTE</b>, minimizing duplication while keeping the
+implementation maintainable.
+</li>
+</ul>
+
+<p>
+The first two reports have now been completed using this approach and are
+<b>ready for your review</b>.
+</p>
+
+<p>
+Once you confirm that this implementation aligns with your expectations, I
+will proceed with converting the remaining Department Break reports using the
+same architecture. After completing those, I will continue applying the
+remaining code review recommendations across the Mutual Fund reports.
+</p>
+
+<p>
+Please review the completed implementation and let me know if you would like
+any changes before I proceed with the remaining reports.
+</p>
+
+<div class="footer">
+<p>
+Thanks &amp; Regards,<br><br>
+
+<b>Sivakumar Thangavel</b>
+</p>
+</div>
+
+</body>
+</html>
