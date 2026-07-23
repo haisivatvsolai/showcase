@@ -1,142 +1,121 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>RE: Proposed Approach for SQL Views, Business Logic and BIRT Formatting</title>
+<title>Mutual Fund Reports - Review Update</title>
 <style>
-    body {
-        font-family: Calibri, Arial, sans-serif;
-        font-size: 11pt;
-        color: #000000;
-        line-height: 1.6;
-        margin: 25px;
-    }
-
-    p {
-        margin: 12px 0;
-    }
-
-    ul {
-        margin-top: 8px;
-        margin-bottom: 15px;
-    }
-
-    li {
-        margin-bottom: 10px;
-    }
-
-    .heading {
-        font-weight: bold;
-        font-size: 14pt;
-        color: #1F4E79;
-    }
-
-    .section {
-        font-weight: bold;
-    }
-
-    .footer {
-        margin-top: 30px;
-    }
+body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#000;}
+h2{color:#1F4E79;}
+h3{color:#1F4E79;}
+table{border-collapse:collapse;width:100%;margin-top:10px;}
+th,td{border:1px solid #808080;padding:8px;vertical-align:top;}
+th{background:#D9EAD3;font-weight:bold;text-align:left;}
+.completed{color:green;font-weight:bold;}
+.pending{color:#C27C0E;font-weight:bold;}
+code,pre{background:#f4f4f4;padding:6px;border:1px solid #ddd;}
+ul{margin-top:4px;}
 </style>
 </head>
-
 <body>
+
+<h2>Subject: Mutual Fund Reports – Review Comments Implemented &amp; Clarification Required for BBH ID / BBH Account Name Logic</h2>
 
 <p>Hi Asit,</p>
 
-<p>
-Thank you for your clarification and for outlining the expected architecture.
-Based on your guidance, we have completed the implementation for the first two reports by following the proposed approach as closely as possible.
-</p>
-
-<p class="section">The implementation has been carried out as follows:</p>
+<p>I have completed the implementation of the review comments for the following Mutual Fund Departmental Break reports:</p>
 
 <ul>
+<li>AFOP</li>
+<li>CA Income</li>
+<li>MFS</li>
+<li>CA Mandatory</li>
+<li>CSG TP D&amp;B</li>
+<li>CSG TP Settlement</li>
+<li>MFAO</li>
+<li>SMF</li>
+<li>R&amp;A</li>
+<li>TP-DR</li>
+<li>TP-Settlement</li>
+</ul>
 
-<li>
-<b>Two generic views have been created</b>, as requested:
+<p>These reports are now ready for QC and Production deployment, except for the clarification mentioned below.</p>
+
+<h3>Implemented Review Comments</h3>
+
+<ol>
+<li><b>Item Type (LS Type)</b><br/>Added Item Type (LS Type) to all workbooks.</li>
+<li><b>BBH Account Number Logic</b>
 <ul>
-<li>One view for <b>Position Breaks (ls_type = 9030, 9099)</b>.</li>
-<li>One view for <b>Break Details (ls_type &lt;&gt; 9030, 9099)</b>.</li>
+<li>If <b>STRING_14</b> is available, display <b>STRING_14</b>.</li>
+<li>Otherwise, if <b>LOCAL_ACC_NO</b> contains '-' at position 8, display the first 7 characters.</li>
+<li>Else display the complete <b>LOCAL_ACC_NO</b>.</li>
 </ul>
-
-These views are responsible only for retrieving the required data from the underlying tables and do not contain any report-specific business logic.
+Previous <b>Omnibus</b> logic has been replaced with the above implementation.
 </li>
+<li><b>Discovery Age</b><br/>Updated to <b>Today's Date - System Entry Date</b>.</li>
+<li><b>50K Tab</b><br/>Implemented and missing records are now returned correctly.</li>
+</ol>
 
-<li>
-<b>Business logic has been moved out of the views</b> and implemented in the
-<b>BIRT report dataset SELECT query</b>, in line with your recommendation.
-</li>
-
-<li>
-<b>Formatting logic</b> (date formats, number formats, etc.) has been removed
-from both the SQL views and the dataset queries. The formatting is now handled
-at the <b>BIRT cell/column level</b>.
-</li>
-
-</ul>
-
-<p class="section">Aggregation Logic</p>
-
-<p>
-Regarding the aggregation logic, we evaluated different implementation
-approaches. Since the aggregation calculations are tightly coupled with the
-corresponding business rules, separating them completely from the aggregation
-logic would significantly complicate the implementation and reduce
-maintainability.
-</p>
-
-<p>
-Based on our earlier discussion and agreement, we have therefore implemented
-the aggregation portion using a <b>single reusable CTE</b>. This CTE performs
-the common aggregation logic required for the different SourceDB values
-(<b>Daily, Monthly, Hedge, NSCC</b>, etc.) and contains only the business logic
-that is inherently required for those aggregation calculations. The report
-dataset then uses this common CTE together with a single SELECT statement to
-retrieve the final output.
-</p>
-
-<p class="section">With this approach:</p>
-
+<h3>Report Specific Fixes</h3>
 <ul>
-<li>The views remain <b>generic and reusable</b>.</li>
-
-<li>Report-specific business logic remains <b>outside the views</b>.</li>
-
-<li>Formatting is handled entirely within <b>BIRT</b>.</li>
-
-<li>
-Common aggregation logic is centralized in a
-<b>single reusable CTE</b>, minimizing duplication while keeping the
-implementation maintainable.
-</li>
+<li><b>AFOP</b> – Report data issue resolved, Item Type added, Discovery Age updated.</li>
+<li><b>CA Income</b> – Report data issue resolved, Item Type added, Discovery Age updated.</li>
+<li><b>MFS</b> – Missing data resolved, Summary page matches Break page, Hedge MFS fixed, common fixes implemented.</li>
 </ul>
 
-<p>
-The first two reports have now been completed using this approach and are
-<b>ready for your review</b>.
+<h3>Clarification Required (TP-Settlement)</h3>
+
+<p><b>Review Comment:</b><br/>
+BBH IDs do not appear to be pulling accurately.<br/>
+Example: TLM shows the break under <b>BBH 319DMS</b>, whereas the report displays <b>319D87</b>.
 </p>
 
-<p>
-Once you confirm that this implementation aligns with your expectations, I
-will proceed with converting the remaining Department Break reports using the
-same architecture. After completing those, I will continue applying the
-remaining code review recommendations across the Mutual Fund reports.
-</p>
+<p>Currently both <b>BBH ID (STRING_27)</b> and <b>BBH Account Name (STRING_29)</b> are derived from the aggregated CTE (<b>CTE_MasterBreak_Parent_Amount</b>) using:</p>
 
-<p>
-Please review the completed implementation and let me know if you would like
-any changes before I proceed with the remaining reports.
-</p>
+<pre>MIN(...) KEEP (
+    DENSE_RANK FIRST
+    ORDER BY STMT_DATE NULLS LAST
+)</pre>
 
-<div class="footer">
-<p>
-Thanks &amp; Regards,<br><br>
+<p>Please confirm whether <b>STMT_DATE</b> is the correct ordering column for retrieving the first BBH ID and BBH Account Name, or if another business column should be used.</p>
 
-<b>Sivakumar Thangavel</b>
-</p>
-</div>
+<h3>Remaining Work</h3>
+<ul>
+<li>SIB Fractional Break</li>
+<li>Position Break</li>
+<li>Account Discrepancy</li>
+<li>Escalation Report</li>
+<li>Mutual Fund Escalation Report</li>
+</ul>
+
+<p>Please find the attached screenshots showing the updated BBH Account Number logic and aggregation logic.</p>
+
+<h3>Review Tracker</h3>
+
+<table>
+<tr>
+<th>Report</th>
+<th>Original Review Comment</th>
+<th>Implementation Status / Resolution</th>
+<th>Status</th>
+</tr>
+<tr><td>AFOP</td><td>Report blank, Item Type, Discovery Age</td><td>Fixed, Item Type added, Discovery Age updated</td><td class="completed">Completed</td></tr>
+<tr><td>CA Income</td><td>Report blank, Item Type, Discovery Age</td><td>Fixed</td><td class="completed">Completed</td></tr>
+<tr><td>MFS</td><td>Missing data, Summary mismatch, Hedge MFS, Item Type, BBH Account No, Discovery Age, 50K</td><td>All implemented</td><td class="completed">Completed</td></tr>
+<tr><td>CA Mandatory</td><td>Common review comments</td><td>All implemented</td><td class="completed">Completed</td></tr>
+<tr><td>CSG TP D&amp;B</td><td>Common review comments</td><td>All implemented</td><td class="completed">Completed</td></tr>
+<tr><td>CSG TP Settlement</td><td>Common review comments</td><td>All implemented</td><td class="completed">Completed</td></tr>
+<tr><td>MFAO</td><td>Common review comments</td><td>All implemented</td><td class="completed">Completed</td></tr>
+<tr><td>SMF</td><td>Common review comments</td><td>All implemented</td><td class="completed">Completed</td></tr>
+<tr><td>R&amp;A</td><td>Common review comments</td><td>All implemented</td><td class="completed">Completed</td></tr>
+<tr><td>TP-DR</td><td>Common review comments</td><td>All implemented</td><td class="completed">Completed</td></tr>
+<tr><td>TP-Settlement</td><td>BBH ID mapping issue</td><td>All fixes completed except BBH ID / BBH Account Name aggregation logic (awaiting clarification)</td><td class="pending">Pending Clarification</td></tr>
+</table>
+
+<p>Kindly review the above and let me know your confirmation regarding the BBH ID / BBH Account Name ordering logic.</p>
+
+<p>Thanks,<br/><b>Siva</b></p>
 
 </body>
 </html>
