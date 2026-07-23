@@ -1,121 +1,228 @@
-
 <!DOCTYPE html>
-<html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
 <head>
-<meta charset="UTF-8">
-<title>Mutual Fund Reports - Review Update</title>
-<style>
-body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#000;}
-h2{color:#1F4E79;}
-h3{color:#1F4E79;}
-table{border-collapse:collapse;width:100%;margin-top:10px;}
-th,td{border:1px solid #808080;padding:8px;vertical-align:top;}
-th{background:#D9EAD3;font-weight:bold;text-align:left;}
-.completed{color:green;font-weight:bold;}
-.pending{color:#C27C0E;font-weight:bold;}
-code,pre{background:#f4f4f4;padding:6px;border:1px solid #ddd;}
-ul{margin-top:4px;}
-</style>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>-</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
 </head>
 <body>
-
-<h2>Subject: Mutual Fund Reports – Review Comments Implemented &amp; Clarification Required for BBH ID / BBH Account Name Logic</h2>
-
-<p>Hi Asit,</p>
-
-<p>I have completed the implementation of the review comments for the following Mutual Fund Departmental Break reports:</p>
-
+<h1 id="seb-reports-review-comments-implemented">SEB Reports – Review
+Comments Implemented</h1>
+<p><strong>Hi Asit,</strong></p>
+<p>As a continuation to the previous update, I have completed the review
+comments for the following reports:</p>
 <ul>
-<li>AFOP</li>
-<li>CA Income</li>
-<li>MFS</li>
-<li>CA Mandatory</li>
-<li>CSG TP D&amp;B</li>
-<li>CSG TP Settlement</li>
-<li>MFAO</li>
-<li>SMF</li>
-<li>R&amp;A</li>
-<li>TP-DR</li>
-<li>TP-Settlement</li>
+<li><strong>SEB Researching Account Discrepancy</strong></li>
+<li><strong>SEB MF Fractional Breaks</strong></li>
 </ul>
-
-<p>These reports are now ready for QC and Production deployment, except for the clarification mentioned below.</p>
-
-<h3>Implemented Review Comments</h3>
-
-<ol>
-<li><b>Item Type (LS Type)</b><br/>Added Item Type (LS Type) to all workbooks.</li>
-<li><b>BBH Account Number Logic</b>
-<ul>
-<li>If <b>STRING_14</b> is available, display <b>STRING_14</b>.</li>
-<li>Otherwise, if <b>LOCAL_ACC_NO</b> contains '-' at position 8, display the first 7 characters.</li>
-<li>Else display the complete <b>LOCAL_ACC_NO</b>.</li>
-</ul>
-Previous <b>Omnibus</b> logic has been replaced with the above implementation.
-</li>
-<li><b>Discovery Age</b><br/>Updated to <b>Today's Date - System Entry Date</b>.</li>
-<li><b>50K Tab</b><br/>Implemented and missing records are now returned correctly.</li>
-</ol>
-
-<h3>Report Specific Fixes</h3>
-<ul>
-<li><b>AFOP</b> – Report data issue resolved, Item Type added, Discovery Age updated.</li>
-<li><b>CA Income</b> – Report data issue resolved, Item Type added, Discovery Age updated.</li>
-<li><b>MFS</b> – Missing data resolved, Summary page matches Break page, Hedge MFS fixed, common fixes implemented.</li>
-</ul>
-
-<h3>Clarification Required (TP-Settlement)</h3>
-
-<p><b>Review Comment:</b><br/>
-BBH IDs do not appear to be pulling accurately.<br/>
-Example: TLM shows the break under <b>BBH 319DMS</b>, whereas the report displays <b>319D87</b>.
-</p>
-
-<p>Currently both <b>BBH ID (STRING_27)</b> and <b>BBH Account Name (STRING_29)</b> are derived from the aggregated CTE (<b>CTE_MasterBreak_Parent_Amount</b>) using:</p>
-
-<pre>MIN(...) KEEP (
-    DENSE_RANK FIRST
-    ORDER BY STMT_DATE NULLS LAST
-)</pre>
-
-<p>Please confirm whether <b>STMT_DATE</b> is the correct ordering column for retrieving the first BBH ID and BBH Account Name, or if another business column should be used.</p>
-
-<h3>Remaining Work</h3>
-<ul>
-<li>SIB Fractional Break</li>
-<li>Position Break</li>
-<li>Account Discrepancy</li>
-<li>Escalation Report</li>
-<li>Mutual Fund Escalation Report</li>
-</ul>
-
-<p>Please find the attached screenshots showing the updated BBH Account Number logic and aggregation logic.</p>
-
-<h3>Review Tracker</h3>
-
+<p>Both reports have been updated based on the review comments and have
+been shared with the stakeholders for review. They are now <strong>ready
+for QC and Production deployment</strong>.</p>
+<h2 id="review-summary">Review Summary</h2>
 <table>
-<tr>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr class="header">
 <th>Report</th>
 <th>Original Review Comment</th>
-<th>Implementation Status / Resolution</th>
+<th>Resolution Implemented</th>
 <th>Status</th>
 </tr>
-<tr><td>AFOP</td><td>Report blank, Item Type, Discovery Age</td><td>Fixed, Item Type added, Discovery Age updated</td><td class="completed">Completed</td></tr>
-<tr><td>CA Income</td><td>Report blank, Item Type, Discovery Age</td><td>Fixed</td><td class="completed">Completed</td></tr>
-<tr><td>MFS</td><td>Missing data, Summary mismatch, Hedge MFS, Item Type, BBH Account No, Discovery Age, 50K</td><td>All implemented</td><td class="completed">Completed</td></tr>
-<tr><td>CA Mandatory</td><td>Common review comments</td><td>All implemented</td><td class="completed">Completed</td></tr>
-<tr><td>CSG TP D&amp;B</td><td>Common review comments</td><td>All implemented</td><td class="completed">Completed</td></tr>
-<tr><td>CSG TP Settlement</td><td>Common review comments</td><td>All implemented</td><td class="completed">Completed</td></tr>
-<tr><td>MFAO</td><td>Common review comments</td><td>All implemented</td><td class="completed">Completed</td></tr>
-<tr><td>SMF</td><td>Common review comments</td><td>All implemented</td><td class="completed">Completed</td></tr>
-<tr><td>R&amp;A</td><td>Common review comments</td><td>All implemented</td><td class="completed">Completed</td></tr>
-<tr><td>TP-DR</td><td>Common review comments</td><td>All implemented</td><td class="completed">Completed</td></tr>
-<tr><td>TP-Settlement</td><td>BBH ID mapping issue</td><td>All fixes completed except BBH ID / BBH Account Name aggregation logic (awaiting clarification)</td><td class="pending">Pending Clarification</td></tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><strong>SEB Researching Account Discrepancy</strong></td>
+<td>Report is blank; expecting data items.</td>
+<td>The issue has been resolved. The report is now fetching data
+correctly and records are displayed as expected.</td>
+<td><strong>Completed</strong></td>
+</tr>
+<tr class="even">
+<td><strong>SEB MF Fractional Breaks</strong></td>
+<td>Currency is blank for several records in the report but populated in
+TLM.</td>
+<td>Currency is now populated correctly for all applicable records. The
+value is derived through the aggregation logic and is displaying as
+expected.</td>
+<td><strong>Completed</strong></td>
+</tr>
+</tbody>
 </table>
-
-<p>Kindly review the above and let me know your confirmation regarding the BBH ID / BBH Account Name ordering logic.</p>
-
-<p>Thanks,<br/><b>Siva</b></p>
-
+<h2 id="notes">Notes</h2>
+<ul>
+<li>Both review comments have been implemented successfully.</li>
+<li>Reports have been shared with the stakeholders for validation.</li>
+<li>Both reports are ready for deployment.</li>
+</ul>
+<p>Thanks,</p>
+<p><strong>Siva</strong></p>
 </body>
 </html>
