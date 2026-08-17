@@ -1,48 +1,12 @@
+Hi Pulin,
 
-Observations from MS Access PROD vs PROD SQL Schema Validation
-Hi Mark,
+I have incorporated the review comments from Rachel and Asit and compared the results against the production SQL results. Most of the columns across the six reports are now matching and working as expected.
 
-After completing the verification of the current MS Access PROD results against the corresponding PROD SQL Schema results, we identified the below observations/discrepancies.
+The remaining issues are mainly around **Statement Date**, **Privilege Account Name**, and **Fund Extension Account Number**. Privilege Account Name has only a small percentage of mismatched/blank records, while the Fund Extension Account Number data is largely matching.
 
-The key point is that the business logic in the existing MS Access PROD result does not always appear to be consistent with the logic provided in the older David Flames MS Access Excel scripts that were originally used as the reference for the BIRT report migration.
+The main challenge is debugging the remaining Statement Date issue. The ITEM table contains around **125 crore records**, and I currently do not have production schema read access to perform detailed record-level comparisons. As a result, validating the production data against the SQL results is taking considerable time.
 
-BBHACCTNUM
-
-For BBHACCTNUM, the current MS Access PROD result appears to refer to the logic from [qry_MasterBreaks_Parent_Amts], where FirstOfBbhAcctNum is derived from tbl_MasterPositionBreaks.BbhAcctNum.
-
-However, the David Flames MS Access Excel script refers to tbl_BreakDetails_MonthlyAndHedge.BbhAcctNum and applies the following logic through V_BREAKDETAILS_MONTHLYANDHEDGE:
-
-If STRING_14 is populated, use STRING_14.
-Otherwise, if the 8th character of LOCAL_ACC_NO is '-', use the first 7 characters of LOCAL_ACC_NO.
-Otherwise, use 'OMNIBUS'.
-
-The current MS Access PROD result also applies a different aggregation logic using MIN(...) with DENSE_RANK FIRST ORDER BY ITEM_ID to derive FirstOfBbhAcctNum.
-
-Therefore, the logic referenced by the older Excel script and the logic currently reflected in MS Access PROD are different, which can also lead to differences in the resulting BBHACCTNUM values.
-
-FundExtAcctNum / NSCC External Account Number
-
-After analysing the MS Access PROD results for FundExtAcctNum, we found that the logic is not consistent across the related reports, particularly when comparing the CA-INCOME Mfsd Report and CA-MAND Mfsd Report.
-
-For the CA-INCOME Mfsd Report, the current logic refers to:
-
-MIN(STRING_25) KEEP (DENSE_RANK FIRST ORDER BY ITEM_ID) AS LastOfNSCCExtAcctNum
-
-Whereas the CA-MAND Mfsd Report refers to:
-
-MAX(STRING_21) KEEP (DENSE_RANK LAST ORDER BY ITEM_ID) AS LastOfNSCCExtAcctNum
-
-In addition, the David Flames Excel sheet appears to refer to ITEM.STRING_21 as NsccExtAcctNum, while the current PROD logic is referring to tbl_MasterPositionBreaks.NsccExtAcctNum / [qry_MasterBreaks_Parent_Amts].LastOfNsccExtAcctNum for the corresponding value.
-
-Because of these differences, the FundExtAcctNum / NSCC External Account Number logic and the resulting values are not consistent between the older MS Access Excel reference script and the current MS Access PROD reports.
-
-Overall, these observations indicate that the older David Flames Excel scripts provided as the development reference and the current MS Access PROD implementation are not completely aligned in terms of business logic.
-
-Since the objective of the current work is to migrate the existing MS Access reports to BIRT/Oracle SQL while maintaining the expected PROD results, could you please confirm which logic should be treated as the authoritative business logic wherever the older Excel script and the current MS Access PROD result differ?
-
-This confirmation will help us ensure that the BIRT/Oracle implementation follows the correct business logic and produces the expected PROD results.
-
-For your reference, I have attached the latest BIRT Report Dataset SQL containing the current implementation.
+Could we please get support from someone with strong **Oracle SQL/database and Access database expertise** to help us investigate and resolve these remaining issues? Having one person support the debugging would help us close this much faster.
 
 Thanks,
 Siva
