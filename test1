@@ -1,138 +1,26 @@
+Hi Asit, Mark,
 
-WITH
-/* =========================================================
-   1. AGING: 0 TO 179 DAYS
-   Replaces qry_Escal_Aging_Hedge_0to179
-   ========================================================= */
-QRY_ESCAL_AGING_HEDGE_0TO179 AS (
-    SELECT
-        Dept,
-        ReasonType,
-        COUNT(CASE
-            WHEN DiscvAge >= 30 AND DiscvAge < 60
-            THEN ISIN
-        END) AS "30-59",
+During the validation of the Mutual Fund reports, we identified a significant difference between the MS Access scripts in the previously shared David Claim Excel sheet (provided around 7–8 months ago) and the latest MS Access scripts currently running in production.
 
-        COUNT(CASE
-            WHEN DiscvAge >= 60 AND DiscvAge < 90
-            THEN ISIN
-        END) AS "60-89",
+**Example – Escalation H Report:**
 
-        COUNT(CASE
-            WHEN DiscvAge >= 90 AND DiscvAge < 120
-            THEN ISIN
-        END) AS "90-119",
+For both the Aging and Detail tabs, we found significant differences in the joins, column definitions, and business logic between the older scripts in the Excel sheet and the latest production scripts.
 
-        COUNT(CASE
-            WHEN DiscvAge >= 120 AND DiscvAge < 150
-            THEN ISIN
-        END) AS "120-149",
+Initially, we converted the scripts from the previously shared Excel sheet into Oracle SQL. However, the output did not match the current MS Access production results. After obtaining the latest production scripts and converting them into Oracle SQL, the results matched approximately 99–100%, with only one column requiring further validation.
 
-        COUNT(CASE
-            WHEN DiscvAge >= 150 AND DiscvAge < 180
-            THEN ISIN
-        END) AS "150-179"
+This indicates that the differences in the previously shared scripts contributed to additional development, data-parity validation, and root-cause analysis efforts.
 
-    FROM qry_Escal_Details_HedgeSetup
-    WHERE DiscvAge >= 0
-      AND DiscvAge < 180
-    GROUP BY Dept, ReasonType
-),
+As approximately 180 reports are still pending development across various sections, similar differences in the remaining reports could lead to further delays.
 
-/* =========================================================
-   2. AGING: 180 TO 364 DAYS
-   Replaces qry_Escal_Aging_Hedge_180to364
-   ========================================================= */
-QRY_ESCAL_AGING_HEDGE_180TO364 AS (
-    SELECT
-        Dept,
-        ReasonType,
-        COUNT(ISIN) AS "180to364"
-    FROM qry_Escal_Details_HedgeSetup
-    WHERE DiscvAge >= 180
-      AND DiscvAge < 365
-    GROUP BY Dept, ReasonType
-),
+**Request:**
 
-/* =========================================================
-   3. AGING: 1 YEAR (365 TO 729 DAYS)
-   Replaces qry_Escal_Aging_Hedge_1Yr
-   ========================================================= */
-QRY_ESCAL_AGING_HEDGE_1YR AS (
-    SELECT
-        Dept,
-        ReasonType,
-        COUNT(ISIN) AS "1Yr"
-    FROM qry_Escal_Details_HedgeSetup
-    WHERE DiscvAge >= 365
-      AND DiscvAge < 730
-    GROUP BY Dept, ReasonType
-),
+To ensure faster development and accurate validation, I kindly request that we obtain the latest production MS Access scripts for all reports, organized section-wise, report-wise, and tab-wise, and consolidate them into an updated Excel sheet.
 
-/* =========================================================
-   4. AGING: 2 YEARS (730 TO 1094 DAYS)
-   Replaces qry_Escal_Aging_Hedge_2Yr
-   ========================================================= */
-QRY_ESCAL_AGING_HEDGE_2YR AS (
-    SELECT
-        Dept,
-        ReasonType,
-        COUNT(ISIN) AS "2Yr"
-    FROM qry_Escal_Details_HedgeSetup
-    WHERE DiscvAge >= 730
-      AND DiscvAge < 1095
-    GROUP BY Dept, ReasonType
-),
+Alternatively, we can compare the existing Excel sheet against the latest production scripts and update only the mismatched scripts.
 
-/* =========================================================
-   5. AGING: 3 YEARS AND ABOVE (1095+ DAYS)
-   Replaces qry_Escal_Aging_Hedge_3Yr+
-   ========================================================= */
-QRY_ESCAL_AGING_HEDGE_3YR_PLUS AS (
-    SELECT
-        Dept,
-        ReasonType,
-        COUNT(ISIN) AS "3Yr+"
-    FROM qry_Escal_Details_HedgeSetup
-    WHERE DiscvAge >= 1095
-    GROUP BY Dept, ReasonType
-)
+Having an updated and verified source will help our developers refer to the correct business logic, reduce repeated verification and rework, and improve the overall development timeline.
 
-/* =========================================================
-   FINAL MAIN QUERY
-   Replaces qry_Escal_Aging_Hedge
-   ========================================================= */
-SELECT
-    A.Dept,
-    A.ReasonType,
-    A."30-59",
-    A."60-89",
-    A."90-119",
-    A."120-149",
-    A."150-179",
-    B."180to364" AS "180-364",
-    C."1Yr",
-    D."2Yr",
-    E."3Yr+"
+Your support in arranging the updated scripts would be greatly appreciated.
 
-FROM QRY_ESCAL_AGING_HEDGE_0TO179 A
-
-LEFT JOIN QRY_ESCAL_AGING_HEDGE_180TO364 B
-    ON A.Dept = B.Dept
-   AND A.ReasonType = B.ReasonType
-
-LEFT JOIN QRY_ESCAL_AGING_HEDGE_1YR C
-    ON A.Dept = C.Dept
-   AND A.ReasonType = C.ReasonType
-
-LEFT JOIN QRY_ESCAL_AGING_HEDGE_2YR D
-    ON A.Dept = D.Dept
-   AND A.ReasonType = D.ReasonType
-
-LEFT JOIN QRY_ESCAL_AGING_HEDGE_3YR_PLUS E
-    ON A.Dept = E.Dept
-   AND A.ReasonType = E.ReasonType
-
-ORDER BY
-    A.Dept,
-    A.ReasonType;
+Thanks & Regards,  
+Sivakumar
