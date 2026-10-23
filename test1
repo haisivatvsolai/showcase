@@ -1,26 +1,23 @@
-Hi Asit, Mark,
+Hi Mark,
 
-During the validation of the Mutual Fund reports, we identified a significant difference between the MS Access scripts in the previously shared David Claim Excel sheet (provided around 7–8 months ago) and the latest MS Access scripts currently running in production.
+Thank you for sharing the MS Access production script for the Mgmt_Rptg report.
 
-**Example – Escalation H Report:**
+I executed the provided queries against the production Oracle schema and compared the results with the MS Access production report. However, the record count mismatch still persists.
 
-For both the Aging and Detail tabs, we found significant differences in the joins, column definitions, and business logic between the older scripts in the Excel sheet and the latest production scripts.
+Upon reviewing the scripts shared, it appears that some underlying queries used by the main report queries may be missing. Since the Mgmt_Rptg report contains three tabs, I need to validate the complete query logic, including all dependent queries and joined tables, to identify the root cause of the discrepancy.
 
-Initially, we converted the scripts from the previously shared Excel sheet into Oracle SQL. However, the output did not match the current MS Access production results. After obtaining the latest production scripts and converting them into Oracle SQL, the results matched approximately 99–100%, with only one column requiring further validation.
+Could you please share the underlying MS Access queries listed below?
 
-This indicates that the differences in the previously shared scripts contributed to additional development, data-parity validation, and root-cause analysis efforts.
+1. "qry_MgmtRptg_ParentData2"
+2. "qry_MgmtRptg_ChildData"
+3. "qry_MgmtRptg_ParentData"
+4. "qry_MgmtRptg_Unresolved_M&H"
 
-As approximately 180 reports are still pending development across various sections, similar differences in the remaining reports could lead to further delays.
+These queries appear to be required to validate the complete report logic and ensure that our Oracle SQL conversion produces results consistent with the MS Access production report.
 
-**Request:**
+Please share the latest production versions of these queries, including any additional dependent queries, if applicable.
 
-To ensure faster development and accurate validation, I kindly request that we obtain the latest production MS Access scripts for all reports, organized section-wise, report-wise, and tab-wise, and consolidate them into an updated Excel sheet.
+Your help in providing the complete set of queries will enable us to investigate the discrepancy thoroughly and proceed with the validation.
 
-Alternatively, we can compare the existing Excel sheet against the latest production scripts and update only the mismatched scripts.
-
-Having an updated and verified source will help our developers refer to the correct business logic, reduce repeated verification and rework, and improve the overall development timeline.
-
-Your support in arranging the updated scripts would be greatly appreciated.
-
-Thanks & Regards,  
+Thanks and regards,
 Sivakumar
