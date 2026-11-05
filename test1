@@ -1,23 +1,34 @@
-Hi Mark,
+Hi Mark and Asit,
 
-Thank you for sharing the MS Access production script for the Mgmt_Rptg report.
+Please find our updates and findings on the four reported issues:
 
-I executed the provided queries against the production Oracle schema and compared the results with the MS Access production report. However, the record count mismatch still persists.
+**Issue 1 – NSCC in CA MAND Report**
 
-Upon reviewing the scripts shared, it appears that some underlying queries used by the main report queries may be missing. Since the Mgmt_Rptg report contains three tabs, I need to validate the complete query logic, including all dependent queries and joined tables, to identify the root cause of the discrepancy.
+The required change to exclude NSCC has been implemented and tested. The updated BIRT report design files have been placed in the SAP portal, and the report is ready.
 
-Could you please share the underlying MS Access queries listed below?
+**Issue 2 – FUNDAMOUNT Calculation**
 
-1. "qry_MgmtRptg_ParentData2"
-2. "qry_MgmtRptg_ChildData"
-3. "qry_MgmtRptg_ParentData"
-4. "qry_MgmtRptg_Unresolved_M&H"
+Currently, the `FUNDAMOUNT` field uses `MAX(FundAmount)` from the Master Break Parent Amount, following the original David MS Access Excel script.
 
-These queries appear to be required to validate the complete report logic and ensure that our Oracle SQL conversion produces results consistent with the MS Access production report.
+As highlighted in the screenshot, there are 19 statement positions associated with a single ledger position. The requested change is to combine all 19 positions and calculate `SUM(FundAmount)` instead of taking the maximum value.
 
-Please share the latest production versions of these queries, including any additional dependent queries, if applicable.
+Please note that this is a change to the existing business logic and will impact all 11 departmental reports, requiring corresponding development and regression testing.
 
-Your help in providing the complete set of queries will enable us to investigate the discrepancy thoroughly and proceed with the validation.
+**Please confirm whether we should proceed with replacing the existing MAX logic with SUM logic across all 11 reports.**
 
-Thanks and regards,
-Sivakumar
+**Issue 3 – FUNDEXTNACCTNUM**
+
+We retested the reported record in the Production environment using the existing logic. The `FUNDEXTNACCTNUM` field is now populating correctly in the BIRT report.
+
+No code changes were made. We are therefore unable to reproduce the reported issue currently. It may have been related to data availability during the UAT execution on November 2.
+
+**Issue 4 – Head Account Details / OMNIBUS**
+
+We compared the CSG TP SETT and R&A report scripts, as well as the other departmental reports. We found no differences in the underlying logic apart from department-specific values.
+
+Regarding the OMNIBUS value highlighted in the screenshot, our investigation confirmed that the corresponding record has an empty `STRING_14` value and the `LOCAL_ACC_NO` does not contain a hyphen. As per the existing BBH account-number logic derived from the original David MS Access script, the record therefore defaults to OMNIBUS.
+
+The current output is consistent with the existing logic. Please let us know if a different expected result is required.
+
+Thanks,  
+Siva
