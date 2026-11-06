@@ -1,34 +1,38 @@
-Hi Mark and Asit,
+Hi Mark,
 
-Please find our updates and findings on the four reported issues:
-
-**Issue 1 – NSCC in CA MAND Report**
-
-The required change to exclude NSCC has been implemented and tested. The updated BIRT report design files have been placed in the SAP portal, and the report is ready.
+Please find the latest updates and clarifications on Issues 2 and 4.
 
 **Issue 2 – FUNDAMOUNT Calculation**
 
-Currently, the `FUNDAMOUNT` field uses `MAX(FundAmount)` from the Master Break Parent Amount, following the original David MS Access Excel script.
+As confirmed, we need to implement the change from `MAX` to `SUM` across all 11 departmental reports.
 
-As highlighted in the screenshot, there are 19 statement positions associated with a single ledger position. The requested change is to combine all 19 positions and calculate `SUM(FundAmount)` instead of taking the maximum value.
+As an initial step, we have implemented the changes in two reports for testing purposes. The updated logic now calculates the `SUM` of BBH Amount and Fund Amount instead of taking their maximum values. The updated report design files have been placed in the shared folder below for your review and testing.
 
-Please note that this is a change to the existing business logic and will impact all 11 departmental reports, requiring corresponding development and regression testing.
+**Shared Folder:** [Insert shared folder path]
 
-**Please confirm whether we should proceed with replacing the existing MAX logic with SUM logic across all 11 reports.**
+We need one clarification regarding the existing BREAK calculation.
 
-**Issue 3 – FUNDEXTNACCTNUM**
+Currently, the BREAK is calculated as:
 
-We retested the reported record in the Production environment using the existing logic. The `FUNDEXTNACCTNUM` field is now populating correctly in the BIRT report.
+`MAX(BBH Amount) - MAX(Fund Amount)`
 
-No code changes were made. We are therefore unable to reproduce the reported issue currently. It may have been related to data availability during the UAT execution on November 2.
+Since we have now changed the amount aggregation from `MAX` to `SUM`, should we also change the BREAK calculation to:
+
+`SUM(BBH Amount) - SUM(Fund Amount)`
+
+Or should we retain the existing MAX-based BREAK calculation?
+
+Please confirm the expected logic so that we can proceed consistently across all 11 reports.
+
+Once the changes are validated in these two reports, we can implement the same changes in the remaining nine reports and hand them over for UAT testing.
 
 **Issue 4 – Head Account Details / OMNIBUS**
 
-We compared the CSG TP SETT and R&A report scripts, as well as the other departmental reports. We found no differences in the underlying logic apart from department-specific values.
+For the R&A report, we were able to reproduce the OMNIBUS scenario and identify the reason. We have already shared the justification, and the output is consistent with the existing business logic.
 
-Regarding the OMNIBUS value highlighted in the screenshot, our investigation confirmed that the corresponding record has an empty `STRING_14` value and the `LOCAL_ACC_NO` does not contain a hyphen. As per the existing BBH account-number logic derived from the original David MS Access script, the record therefore defaults to OMNIBUS.
+However, for the CSG TP SETT report, we could not reproduce the issue based on the screenshot shared earlier. Therefore, we are unable to investigate and confirm the exact reason for that particular scenario.
 
-The current output is consistent with the existing logic. Please let us know if a different expected result is required.
+As the underlying breaks or their statuses may change by the following day, we request that any such issues be forwarded to us immediately when identified. This will help us reproduce the exact scenario, investigate the data, and debug the issue while the corresponding records are still available.
 
 Thanks,  
 Siva
