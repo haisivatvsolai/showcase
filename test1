@@ -1,38 +1,53 @@
 Hi Mark,
 
-Please find the latest updates and clarifications on Issues 2 and 4.
+The current report logic was implemented based on David’s original Excel specification, which references `STRING_21` for both BBH and NSSC (Fund) extension account numbers. We subsequently incorporated Asit’s guidance on prioritizing Ledger and Statement records, also based on the `STRING_21` logic.
 
-**Issue 2 – FUNDAMOUNT Calculation**
+The latest production MS Access script you shared introduces an additional source, `STRING_25`, for the NSSC (Fund) extension account number. This logic was not available when we developed the reports and completed the initial parity testing.
 
-As confirmed, we need to implement the change from `MAX` to `SUM` across all 11 departmental reports.
-
-As an initial step, we have implemented the changes in two reports for testing purposes. The updated logic now calculates the `SUM` of BBH Amount and Fund Amount instead of taking their maximum values. The updated report design files have been placed in the shared folder below for your review and testing.
-
-**Shared Folder:** [Insert shared folder path]
-
-We need one clarification regarding the existing BREAK calculation.
-
-Currently, the BREAK is calculated as:
-
-`MAX(BBH Amount) - MAX(Fund Amount)`
-
-Since we have now changed the amount aggregation from `MAX` to `SUM`, should we also change the BREAK calculation to:
-
-`SUM(BBH Amount) - SUM(Fund Amount)`
-
-Or should we retain the existing MAX-based BREAK calculation?
-
-Please confirm the expected logic so that we can proceed consistently across all 11 reports.
-
-Once the changes are validated in these two reports, we can implement the same changes in the remaining nine reports and hand them over for UAT testing.
-
-**Issue 4 – Head Account Details / OMNIBUS**
-
-For the R&A report, we were able to reproduce the OMNIBUS scenario and identify the reason. We have already shared the justification, and the output is consistent with the existing business logic.
-
-However, for the CSG TP SETT report, we could not reproduce the issue based on the screenshot shared earlier. Therefore, we are unable to investigate and confirm the exact reason for that particular scenario.
-
-As the underlying breaks or their statuses may change by the following day, we request that any such issues be forwarded to us immediately when identified. This will help us reproduce the exact scenario, investigate the data, and debug the issue while the corresponding records are still available.
+Therefore, incorporating the latest production logic will require a **CR rather than a defect fix**, as it involves a change to the existing business logic across all 11 departmental break reports and the AIP reports.
 
 Thanks,  
-Siva
+Sivakumar
+
+Hi Mark,
+
+I reviewed the comments and would like to clarify the following points.
+
+**1. Statement Date (Column E)**
+
+The Statement Date is currently populated using the MAX(STMT_DATE) from `V_MASTERPOSITIONBREAKS`, based on the corresponding mapped Agent Code. For Hedge categories, the current mapping points to Mutual Funds – Monthly Positions, as specified in David’s original MS Access script. We implemented the same logic in the Oracle SQL conversion.
+
+Therefore, the date displayed (e.g., 08/31/2026) represents the latest statement date from the mapped source category, rather than an individual item's date in TLM.
+
+Regarding the Hedge Quarterly category, if the expected date should come from its own category (e.g., 09/17/2026) instead of Monthly Positions, please confirm the correct source mapping/business logic so we can make the necessary adjustment.
+
+**2. BBH Account Number / OMNIBUS Logic**
+
+We implemented the existing logic as per David’s original MS Access script. When `STRING_14` is empty and the Local Account Number does not contain a hyphen, the BBH account number defaults to OMNIBUS.
+
+We also checked the example in the R&A report. The corresponding Statement record has an empty `STRING_14` value and a Local Account Number without a hyphen, which is why the report displays OMNIBUS.
+
+If the expected behavior is to derive the BBH account number from the Ledger record when the Statement record does not contain it, please confirm the intended business logic. We can then implement the required change consistently across the departmental reports.
+
+**3. BBH Amount and Fund Amount**
+
+We have already implemented the amount-related changes. Could you please share the specific report names and corresponding examples if these values are still not appearing as expected? We can investigate further based on those details.
+
+**4. Fund Extension Account Number (NSSC)**
+
+As explained in my earlier email, the current implementation follows David’s original specification and Asit’s subsequent guidance. The latest production MS Access logic introduces `STRING_25` as an additional source for the Fund Extension Account Number. This was not available when the original implementation was completed.
+
+We will need to incorporate this updated logic through a CR across the relevant departmental and AIP reports.
+
+**5. Additional Examples for Investigation**
+
+For the reported mismatches, could you please provide the report name along with the Item ID and, wherever possible, the BBH Account Number, ISIN/Security ID, and relevant screenshots?
+
+An Item ID alone makes it difficult to identify and reproduce the issue, particularly when multiple departmental reports are involved. Having the report name and these additional details will help us investigate each case more efficiently.
+
+Also, for the NSSC changes, please confirm that the latest deployment is available in the QC environment. If the changes are already deployed but the old results are still appearing, please clear the browser cache and retry.
+
+We have implemented the existing logic consistently across the departmental reports. Any differences in the expected results will need to be investigated against the specific report and sample records.
+
+Thanks,
+Shiva
