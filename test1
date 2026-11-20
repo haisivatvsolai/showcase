@@ -1,65 +1,17 @@
-	-- Oracle SQL equivalent of qry_FSDailyStats_View
--- Dynamically handles Monday (Fri-Sun: >= input_date - 3) vs. all other days (yesterday: = input_date - 1)
-SELECT 
-    TRUNC(i.STMT_DATE) AS STMT_DATE,
-    COUNT(i.GIN) AS TotalItems,
-    COUNT(CASE WHEN i.LAST_ACTION_OWNER = 'SYSTEM' THEN i.GIN END) AS STP,
-    COUNT(CASE WHEN i.FLAG_2 = 0 AND (i.BRAN_CODE = ' ' OR TRIM(i.BRAN_CODE) IS NULL) THEN i.GIN END) AS UnCoded,
-    COUNT(CASE WHEN i.FLAG_2 = 0 THEN i.GIN END) AS TotalOpen
-FROM 
-    TLMADM_ITEM i
-    INNER JOIN TLMADM_BANK b 
-        ON i.CORR_ACC_NO = b.CORR_ACC_NO
-WHERE 
-    b.LOCAL_ACC_NO = 'FUNDSETTLE TRANS POS'
-    AND i.LS_TYPE IN (9105, 9106, 9129, 9128)
-    AND (
-        (
-            TO_CHAR(TRUNC(:input_date), 'DY', 'NLS_DATE_LANGUAGE=ENGLISH') = 'MON'
-            AND TRUNC(i.STMT_DATE) >= TRUNC(:input_date) - 3
-            AND TRUNC(i.STMT_DATE) < TRUNC(:input_date)
-        )
-        OR
-        (
-            TO_CHAR(TRUNC(:input_date), 'DY', 'NLS_DATE_LANGUAGE=ENGLISH') <> 'MON'
-            AND TRUNC(i.STMT_DATE) = TRUNC(:input_date) - 1
-        )
-    )
-GROUP BY 
-    TRUNC(i.STMT_DATE)
-ORDER BY 
-    STMT_DATE DESC;
-	
-	
-	-- Oracle SQL equivalent of qry_NsccDailyStats_View
--- Dynamically handles Monday (Fri-Sun: >= input_date - 3) vs. all other days (yesterday: = input_date - 1)
-SELECT 
-    TRUNC(i.STMT_DATE) AS STMT_DATE,
-    COUNT(i.GIN) AS TotalItems,
-    COUNT(CASE WHEN i.LAST_ACTION_OWNER = 'SYSTEM' THEN i.GIN END) AS STP,
-    COUNT(CASE WHEN i.FLAG_2 = 0 AND (i.BRAN_CODE = ' ' OR TRIM(i.BRAN_CODE) IS NULL) THEN i.GIN END) AS UnCoded,
-    COUNT(CASE WHEN i.FLAG_2 = 0 THEN i.GIN END) AS TotalOpen
-FROM 
-    TLMADM_ITEM i
-    INNER JOIN TLMADM_BANK b 
-        ON i.CORR_ACC_NO = b.CORR_ACC_NO
-WHERE 
-    b.LOCAL_ACC_NO = 'NSCC FUNDS'
-    AND i.LS_TYPE IN (9105, 9106, 9129, 9128)
-    AND (
-        (
-            TO_CHAR(TRUNC(:input_date), 'DY', 'NLS_DATE_LANGUAGE=ENGLISH') = 'MON'
-            AND TRUNC(i.STMT_DATE) >= TRUNC(:input_date) - 3
-            AND TRUNC(i.STMT_DATE) < TRUNC(:input_date)
-        )
-        OR
-        (
-            TO_CHAR(TRUNC(:input_date), 'DY', 'NLS_DATE_LANGUAGE=ENGLISH') <> 'MON'
-            AND TRUNC(i.STMT_DATE) = TRUNC(:input_date) - 1
-        )
-    )
-GROUP BY 
-    TRUNC(i.STMT_DATE)
-ORDER BY 
-    STMT_DATE DESC;
-	
+Hi Mark,
+
+While incorporating the requested view changes into the Escalation Hedge and Non-Hedge reports, I cross-checked the existing columns and underlying business logic against the recent changes implemented in the 11 Departmental Breaks reports.
+
+I found that the same columns and business logic are present in both reports. Therefore, the recent CR and review-comment changes implemented in Departmental Breaks also need to be incorporated into the Escalation Hedge and Non-Hedge reports, including:
+1. Bad join fixes and BBH Amount / Fund Amount logic changes (MAX to SUM).
+2. FundExtnAcctNum logic changes as per the new CR.
+3. Removal of NSCC Source DB references and related conditions across all relevant SQL sections.
+4. Asset Description changes as per the new CR.
+In addition to incorporating the view logic directly into the report datasets, these changes need to be implemented and thoroughly validated through QC parity testing to ensure consistency with the Departmental Breaks reports.
+
+Considering the additional implementation and testing effort, I propose sharing the final Escalation Hedge and Non-Hedge RPT design files on Monday, after completing all the changes and validation.
+
+Thanks for your understanding.
+
+Regards,
+Sivakumar
