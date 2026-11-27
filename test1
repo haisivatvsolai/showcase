@@ -1,47 +1,66 @@
 Hi Mark,
 
-We have reviewed the reported issues and completed the required changes for the first two issues. Please find the updates below.
+We have investigated the reported defects in the Production and QC schemas. Please find our findings and updates for each issue below.
 
-**1. Omnibus Issue – RNA and Mutual Fund Reports**
+1. BBH Number and ISIN Columns – Blank Records (Production – RNA Mutual Fund Report)
 
-The first reported issue was related to omnibus account numbers in the RNA and Mutual Fund reports.
+Our investigation identified that the blank values were caused by the FULL OUTER JOIN introduced in the recent CR, which resulted in approximately 800 additional records compared to the existing MS Access output.
 
-As per Ashith's direction, we have implemented the same logic across all 11 departmental breaks, not just the RNA and Mutual Fund reports.
+We have addressed this by incorporating COALESCE logic to retrieve the BBH Number (Security ID) and ISIN/Stock Code from the child records (Monthly Hedge Views) whenever the corresponding values are unavailable in the parent records (Master Position Views).
 
-We have completed one round of local testing, and the results are working as expected. However, further testing is required to validate the changes thoroughly.
+The updated logic now populates these fields correctly, and the issue is resolved.
 
-**2. BBH Amount / Fund Amount / Break and Child Break – NULL Handling**
+2. BBH Account Number Displaying as OMNIBUS (Production – RNA Mutual Fund Report)
 
-The second issue was related to NULL or empty values in the BBH amount, fund amount, break and child break columns.
+This issue was already addressed in the previous deployment. The reported defects appear to have been identified before that deployment.
 
-As part of the fix, we have implemented Oracle's `NVL` function to replace NULL values with zero (0) wherever applicable.
+However, during our investigation, we found a few records where OMNIBUS was still displayed because STRING_14 was empty in both the parent (Master Position) and child (Monthly Hedge) records. Additionally, the LOCAL_ACC_NO did not contain a hyphen, which is required by the existing account-number extraction logic.
 
-This change has been completed.
+When we executed the report yesterday, five such records were identified. However, in today's execution, no OMNIBUS records were found. Therefore, the issue is currently resolved in the latest report output.
 
-**3. AIF OP Report – BBH Extension Account Number**
+3. BBH Account Name – Blank Records (Production – RNA Mutual Fund Report)
 
-The third issue was related to a BBH extension account number appearing in the AIF OP report, even though the corresponding account number was not available in TLM.
+We investigated the BBH Account Name population logic and found that our BIRT report already populates several BBH Account Names that are blank in the original MS Access output.
 
-We attempted to reproduce the issue in the QC environment and were able to reproduce it initially. During the first execution of the SQL query, the BBH extension account number was populated with an external account number.
+This is achieved through an additional grouping-based logic using the BBH Account Number. Where a BBH Account Name is available for a particular BBH Account Number within the Master Position records, the same account name is used to populate other records with the matching BBH Account Number where the account name is blank.
 
-However, when we executed the same query again approximately 30–60 minutes later, the BBH extension account number was returned as NULL across the relevant columns for the selected ICIN/BBH number.
+However, for the remaining records reported as blank, our investigation found that STRING_29 (BBH Account Name) is empty in both the parent (Master Position Views) and child (Monthly Hedge Views) records.
 
-This indicates that the underlying data in the QC environment may have changed between the two executions, possibly due to a downstream process or a background batch job.
+Since no BBH Account Name is available in either source record, the existing grouping logic cannot retrieve or populate the account name for these cases.
 
-Currently, the query is returning NULL as expected, which is the required behavior for this scenario.
+Therefore, the BIRT report is already applying the available fallback logic, and the remaining blank values are due to the absence of BBH Account Name data in both underlying views.
 
-However, we could not establish the exact reason why the account number was populated initially and subsequently became NULL.
+4. AIFOP Mutual Fund – BBH External Account Number (QC Schema)
 
-**Deployment and Further Testing**
+We investigated the reported issue for ISIN 34YX M5.
 
-We have incorporated the first two fixes across all 11 departmental breaks and completed one round of local testing.
+Our investigation identified five corresponding records in the Monthly Hedge Views (child records). For all five Item IDs, STRING_21 contains the external account number.
 
-The updated report design (RPD) files have been placed in the shared folder at the below location for further QC testing and validation.
+We also verified the corresponding records in the Master Position Break Views (parent records) using the Stock Code and Local Account Number combinations. The corresponding records were present there as well, and STRING_21 was populated for all five records.
 
-**Shared Folder Path:**  
-[Insert shared folder path]
+As per the agreed logic shared in David's Excel, the report retrieves the external account number from the Master Position Views (parent records), applying the Ledger-first and Statement-second prioritisation logic to select the appropriate record.
 
-Please proceed with the further testing and let us know if you encounter any issues.
+We also reviewed the TLM screenshot shared in the defect. The External Account Number field appears to contain values in the screenshot.
 
-Thanks & Regards,  
-Sivakumar
+Based on these findings, we could identify the external account numbers in both the parent and child records. Therefore, we could not reproduce the reported scenario where TLM does not contain an external account number.
+
+Could you please share the specific Item IDs investigated on your side and clarify the exact TLM selection criteria used to identify the missing external account number? This will help us investigate the discrepancy further.
+
+5. Record Count Validation – MS Access vs. Oracle SQL (Production)
+
+As part of the investigation, we also compared the production MS Access output with the Oracle SQL output.
+
+MS Access output: 3,519 records.
+
+Oracle SQL with INNER JOIN: 3,519 records.
+
+Oracle SQL with FULL OUTER JOIN: 4,320 records.
+
+This confirms that the FULL OUTER JOIN introduced approximately 800 additional records, which contributed to the blank BBH Number, ISIN and BBH Account Name observations.
+
+We have addressed the BBH Number and ISIN population for these additional records through the updated child-record fallback logic.
+
+Please review the above findings and share the requested Item IDs and TLM details for the remaining scenarios so that we can validate them further.
+
+Regards,
+Shiva
